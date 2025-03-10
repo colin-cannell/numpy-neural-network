@@ -1,6 +1,82 @@
 import numpy as np
 
+class NeuralNetwork:
+    def __init__(self):
+        self.layers = []
+    
+    def add(self, layer):
+        """
+        Adds a layer to the network
+        @param layer: layer to add
+        """
+        self.layers.append(layer)
+    
+    def forward(self, input):
+        """
+        Forward pass through the network
+        @param input: input data
+        """
+        for layer in self.layers:
+            input = layer.forward(input)
+        return input
+
+    def backward(self, output_gradient, learning_rate):
+        """
+        Backward pass through the network
+        @param output_gradient: gradient of the loss with respect to the output
+        @param learning_rate: learning rate
+        """
+    
+        for layer in reversed(self.layers):
+            output_gradient = layer.backward(output_gradient, learning_rate)
+        return output_gradient
+
+    def train(self, x, y, epochs, learning_rate):
+        """
+        Trains the model using the given data
+        @param x: input data
+        @param y: target data
+        @param epochs: number of epochs
+        @param learning_rate: learning rate
+        """
+        for epoch in range(epochs):
+            loss = 0
+            correct = 0
+            for x, y in zip(x, y):
+                output = self.forward(x)
+                loss += self.loss(output, y)
+                correct += self.accuracy(output, y)
+                output_gradient = self.loss_derivative(output, y)
+                self.backward(output_gradient, learning_rate)
+
+                if np.argmax(output) == np.argmax(y):
+                    correct += 1
+            
+            accuracy = correct / len(x)
+            print(f"Epoch {epoch+1}/{epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
+
+    
+    def loss(self, output, target):
+        """
+        Calculates the loss between the output and the target using mean squared error
+        @param output: output of the model
+        @param target: target data
+        """
+        return np.mean((output - target) ** 2)
+    
+    def loss_derivative(self, output, target):
+        """
+        Calculates the derivative of the loss function
+        @param output: output of the model
+        @param target: target data
+        """
+        return 2 * (output - target) / output.size
+
+
 class Layer:
+    """
+    Base class for all layers
+    """
     def __init__(self):
         pass
 
@@ -81,22 +157,20 @@ class MaxPool(Layer):
         return output
     
 
-
-"""
-"""
 class Flatten(Layer):
-    def __init__(self):
-        pass
-
+    """
+    Flatten layer flattens the input image into a 1D array
+    @param input: input image
+    """
     def forward(self, input):
         return input.flatten()
 
-"""
-Dense layer is a fully connected layer that connects every neuron in the previous layer to every neuron in the next layer
-@param input_size: number of input neurons
-@param output_size: number of output neurons
-"""
 class Dense(Layer):
+    """
+    Dense layer is a fully connected layer that connects every neuron in the previous layer to every neuron in the next layer
+    @param input_size: number of input neurons
+    @param output_size: number of output neurons
+    """
     def __init__(self, input_size, output_size):
         self.weights = np.random.randn(input_size, output_size)
         self.bias = np.random.randn(output_size)
@@ -111,11 +185,30 @@ class Dense(Layer):
         self.weights -= learning_rate * weights_gradient
         self.bias -= learning_rate * output_gradient
         return input_gradient      
-"""
-"""
+
 class Dropout(Layer):
-    def __init__(self):
-        pass
+    """
+    Dropout layer randomly sets a fraction of the input to 0 during training to provent over fitting
+    @param rate: fraction of the input to set to 0 
+    """
+    def __init__(self, rate=0.5):
+        if not 0 <= rate <= 1:
+            raise ValueError("Dropout rate must be between 0 and 1")
+        self.rate = rate
+        self.training = True
+    
+    def forward(self, input):
+        if not self.training:
+            return input
+
+        # Create dropout mask (1s where values are kept, 0s where they are dropped)
+        self.mask = np.random.binomial(1, 1 - self.rate, size=input.shape)
+
+        # Scale the remaining values to maintain expected sum
+        return input * self.mask / (1 - self.rate)
+    
+    def training(self, mode=True):
+        self.training = mode
 
 """
 Relu activation function introduces non-linearity in the model
