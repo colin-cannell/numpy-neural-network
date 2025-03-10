@@ -1,10 +1,11 @@
 import numpy as np
 from layer import Layer
 
+"""
+MaxPool layer reduces the size of the image by taking the maximum value in each region
+"""
 class MaxPool(Layer):
     """
-    MaxPool layer reduces the size of the image by taking the maximum value in each region
-    @param image: input image
     @param pool_size: size of the pooling region
     @param strides: strides of the pooling
     """
@@ -12,6 +13,11 @@ class MaxPool(Layer):
         self.pool_size = pool_size
         self.strides = strides
     
+    """
+    Forward pass of the MaxPool layer
+    @param image: input image
+    @return: output of the MaxPool layer
+    """
     def forward(self, image):
         image_H, image_W = image.shape
 

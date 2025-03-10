@@ -6,8 +6,6 @@ from flatten import Flatten
 from maxpool import MaxPool
 from dropout import Dropout
 from network import NeuralNetwork
-from activation import Activation
-from activation import relu
 
 train_images = "MNIST_ORG/train-images.idx3-ubyte"
 train_labels = "MNIST_ORG/train-labels.idx1-ubyte"
@@ -49,8 +47,8 @@ model = NeuralNetwork()
 
 # Add the layers
 # Ensure the input to Conv2D is 4D
-kernel_shape = (3, 2)  # (kernel_height, kernel_width)
-conv_layer = Conv2D(image_shape=(1, 28, 28), kernel_size=kernel_shape, depth=32)  # Initialize Conv2D
+kernel_shape = (3, 3)  # (kernel_height, kernel_width)
+conv_layer = Conv2D(image_shape=(28, 28, 1), kernel_size=kernel_shape, depth=32)  # Initialize Conv2D
 model.add(conv_layer)  # Add Conv2D to the model
 
 maxpool_layer = MaxPool(pool_size=2, strides=2)  # Initialize MaxPool
