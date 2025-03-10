@@ -8,13 +8,12 @@ class MaxPool(Layer):
     @param pool_size: size of the pooling region
     @param strides: strides of the pooling
     """
-    def __init__(self, image, pool_size=2, strides=2):
-        self.image = image
+    def __init__(self, pool_size=2, strides=2):
         self.pool_size = pool_size
         self.strides = strides
     
-    def forward(self):
-        image_H, image_W = self.image.shape
+    def forward(self, image):
+        image_H, image_W = image.shape
 
         output_H = (image_H - self.pool_size) // self.strides + 1
         output_W = (image_W - self.pool_size) // self.strides + 1

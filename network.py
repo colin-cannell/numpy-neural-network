@@ -1,4 +1,6 @@
 import numpy as np
+from activation import Activation
+from activation import cross_entropy_loss, cross_entropy_loss_derivative
 
 class NeuralNetwork:
     def __init__(self):
@@ -11,14 +13,14 @@ class NeuralNetwork:
         """
         self.layers.append(layer)
     
-    def forward(self, input):
+    def forward(self, image):
         """
         Forward pass through the network
         @param input: input data
         """
         for layer in self.layers:
-            input = layer.forward(input)
-        return input
+            image = layer.forward(image)
+        return image
 
     def backward(self, output_gradient, learning_rate):
         """
@@ -30,7 +32,7 @@ class NeuralNetwork:
             output_gradient = layer.backward(output_gradient, learning_rate)
         return output_gradient
 
-    def train(self, x, y, epochs, learning_rate, loss_function):
+    def train(self, x, y, epochs, learning_rate, loss_function=cross_entropy_loss, loss_derivative=cross_entropy_loss_derivative):
         """
         Trains the model using the given data
         @param x: input data
@@ -41,16 +43,19 @@ class NeuralNetwork:
         for epoch in range(epochs):
             loss = 0
             correct = 0
-            for x, y in zip(x, y):
-                output = self.forward(x)
-                loss += loss_function(y, output)
-                correct += self.accuracy(output, y)
-                output_gradient = self.loss_derivative(output, y)
+            for xi, yi in zip(x, y):
+                output = self.forward(xi)
+                loss += loss_function(yi, output)
+                
+                # Calculate accuracy: increment correct if predicted class matches target class
+                if np.argmax(output) == np.argmax(yi):
+                    correct += 1
+                
+                # Calculate output gradient
+                output_gradient = loss_derivative(output, yi)
+                
+                # Perform backward pass
                 self.backward(output_gradient, learning_rate)
 
-                if np.argmax(output) == np.argmax(y):
-                    correct += 1
-            
             accuracy = correct / len(x)
             print(f"Epoch {epoch+1}/{epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
-

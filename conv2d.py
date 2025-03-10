@@ -1,44 +1,41 @@
 import numpy as np
 from layer import Layer
+from scipy import signal
 
 class Conv2D(Layer):
-    """
-    Conv2D layer searches through the image applying filters in order order to find patterns
-    @param image: input image
-    @param filters: number of filters
-    @param kernel_size: size of the kernel
-    @param strides: strides of the convolution
-    @param padding: padding of the convolution
-    @param activation: activation function  
-    """
-    def __init__(self, image, filters, kernel, strides=1, padding=0, activation=None):
-        super().__init__()
-        self.image = image
-        self.filters = filters
-        self.kernel = kernel
-        self.strides = strides
-        self.padding = padding
-        self.activation = activation
-
-    def forward(self):
-        image_H, image_W = self.image.shape
-        kernel_H, kernel_W = self.kernel.shape
-
-        if self.padding > 0:
-            self.image = np.pad(self.image, ((self.padding, self.padding), (self.padding, self.padding)), mode='constant')
-
-        output_H = (image_H - kernel_H) // self.strides + 1
-        output_W = (image_W - kernel_W) // self.strides + 1
-
-        output = np.zeros((output_H, output_W))
-
-        for i in range(0, output_H):
-            for j in range(0, output_W):
-                region = self.image[i*self.strides:i*self.strides+kernel_H, j*self.strides:j*self.strides+kernel_W]
-                output[i, j] = np.sum(region * self.kernel)
+    def __init__(self, image_shape, kernel_size, depth):
+        image_D, image_H, image_W = image_shape
+        self.image_shape = image_shape
+        self.image_D = image_D
+        self.kernel_H = kernel_size[0]
+        self.kernel_W = kernel_size[1]
+        self.output_shape = (depth, image_H - self.kernel_H + 1, image_W - self.kernel_W + 1)
+        self.depth = depth
+        self.kernel_shape = (depth, image_D, self.kernel_H, self.kernel_W)
+        self.kernels = np.random.randn(*self.kernel_shape)
+        self.biases = np.random.randn(depth)
         
-        if self.activation:
-            output = self.activation(output)
 
-        return output
+    def forward(self, image):
+        self.image = image
+        self.output = np.copy(self.biases)
 
+        for i in range(self.depth):
+            for j in range(self.image_D):
+                    self.output[i] += signal.correlate2d(self.image[j], self.kernels[i, j], "valid")
+
+        return self.output        
+        
+    def backward(self, output_gradient, learning_rate):
+        kernels_gradient = np.zeros(self.kernels.shape)
+        image_gradient = np.zeros(self.image_shape)
+
+        for i in range(self.depth):
+            for j in range(self.image_D):
+                kernels_gradient[i, j] = signal.correlate2d(self.image[j], output_gradient[i], "valid")
+                image_gradient[j] += signal.convolve2d(output_gradient[i], self.kernels[i, j], "full")
+        
+        self.kernels -= learning_rate * kernels_gradient
+        self.biases -= learning_rate * output_gradient
+
+        return image_gradient
