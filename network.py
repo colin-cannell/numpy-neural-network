@@ -13,14 +13,15 @@ class NeuralNetwork:
         """
         self.layers.append(layer)
     
-    def forward(self, image):
+    def forward(self, input):
         """
         Forward pass through the network
         @param input: input data
         """
+        output = input
         for layer in self.layers:
-            image = layer.forward(image)
-        return image
+            output = layer.forward(output)
+        return output
 
     def backward(self, output_gradient, learning_rate):
         """

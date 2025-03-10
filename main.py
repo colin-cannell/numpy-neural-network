@@ -48,7 +48,7 @@ model = NeuralNetwork()
 # Add the layers
 # Ensure the input to Conv2D is 4D
 kernel_shape = (3, 3)  # (kernel_height, kernel_width)
-conv_layer = Conv2D(image_shape=(28, 28, 1), kernel_size=kernel_shape, depth=32)  # Initialize Conv2D
+conv_layer = Conv2D(input_shape=(28, 28, 1), kernel_size=kernel_shape, depth=32)  # Initialize Conv2D
 model.add(conv_layer)  # Add Conv2D to the model
 
 maxpool_layer = MaxPool(pool_size=2, strides=2)  # Initialize MaxPool
