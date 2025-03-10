@@ -1,4 +1,6 @@
 import numpy as np
+import pickle
+
 
 class NeuralNetwork:
     def __init__(self):
@@ -26,12 +28,11 @@ class NeuralNetwork:
         @param output_gradient: gradient of the loss with respect to the output
         @param learning_rate: learning rate
         """
-    
         for layer in reversed(self.layers):
             output_gradient = layer.backward(output_gradient, learning_rate)
         return output_gradient
 
-    def train(self, x, y, epochs, learning_rate):
+    def train(self, x, y, epochs, learning_rate, loss_function):
         """
         Trains the model using the given data
         @param x: input data
@@ -44,7 +45,7 @@ class NeuralNetwork:
             correct = 0
             for x, y in zip(x, y):
                 output = self.forward(x)
-                loss += self.loss(output, y)
+                loss += loss_function(y, output)
                 correct += self.accuracy(output, y)
                 output_gradient = self.loss_derivative(output, y)
                 self.backward(output_gradient, learning_rate)
@@ -54,23 +55,6 @@ class NeuralNetwork:
             
             accuracy = correct / len(x)
             print(f"Epoch {epoch+1}/{epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
-
-    
-    def loss(self, output, target):
-        """
-        Calculates the loss between the output and the target using mean squared error
-        @param output: output of the model
-        @param target: target data
-        """
-        return np.mean((output - target) ** 2)
-    
-    def loss_derivative(self, output, target):
-        """
-        Calculates the derivative of the loss function
-        @param output: output of the model
-        @param target: target data
-        """
-        return 2 * (output - target) / output.size
 
 
 class Layer:
@@ -231,6 +215,46 @@ Tanh activation function takes in any real number and returns the output between
 def tanh(x):
     return np.tanh(x)
 
+"""
+Softmax activation function takes in any real number and returns the output between 0 and 1
+@ param x: input
+"""
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
+
+"""
+Cross entropy loss function
+@param y_true: true labels
+@param y_pred: predicted labels
+"""
+def cross_entropy_loss(y_true, y_pred):
+    return -np.sum(y_true * np.log(y_pred + 1e-10)) / y_true.shape[0]
+
+"""
+Cross entropy loss derivative
+@param y_true: true labels
+@param y_pred: predicted labels
+"""
+def cross_entropy_loss_derivative(y_true, y_pred):
+    return -y_true / (y_pred + 1e-10)
+
+"""
+Mean squared error loss function
+@param y_true: true labels
+@param y_pred: predicted labels
+"""
+def mean_squared_error_loss(y_true, y_pred):
+    return np.mean((y_true - y_pred) ** 2)
+
+"""
+Mean squared error loss derivative
+@param y_true: true labels
+@param y_pred: predicted labels
+"""
+def mean_squared_error_loss_derivative(y_true, y_pred):
+    return 2 * (y_pred - y_true) / y_true.size
+
 train_images = "MNIST_ORG/train-images.idx3-ubyte"
 train_labels = "MNIST_ORG/train-labels.idx1-ubyte"
 
@@ -297,3 +321,8 @@ for i in range(len(test_images)):
         correct += 1
 accuracy = correct / len(test_images)
 print(f"Test accuracy: {accuracy:.4f}")
+
+# Save the model
+with open("model.pkl", "wb") as f:
+    pickle.dump(model, f)
+
