@@ -50,14 +50,14 @@ model = NeuralNetwork()
 
 # **Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=3, depth=32))  
-model.add(Activation(relu, None))
+model.add(Activation(Relu().forward, Relu().backward))
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
 model.add(MaxPool(pool_size=2, stride=2))
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=(26, 26, 1), kernel_size=3, depth=64))  # Updated input shape
-model.add(Activation(relu, None))
+model.add(Activation(Relu().forward, Relu().backward))
 
 # **MaxPooling Layer**: Downsampling again
 model.add(MaxPool(pool_size=2, stride=2))
@@ -65,18 +65,13 @@ model.add(MaxPool(pool_size=2, stride=2))
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
 model.add(Flatten())
 
-# Calculate the number of features after the last MaxPool layer
-# Output of second Conv2D: (64, 6, 6) -> Flatten to 64 * 6 * 6 = 2304 features
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
 model.add(Dense(768, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
-model.add(Activation(relu, None))
-
-# **Flatten Layer**: Converts 2D feature maps into a 1D vector 
-model.add(Flatten())
+model.add(Activation(Relu().forward, Relu().backward))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
 model.add(Dense(128, 10))
-model.add(Activation(softmax, None))
+model.add(Activation(Softmax().forward, Softmax().backward))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01)

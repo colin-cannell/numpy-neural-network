@@ -17,8 +17,10 @@ class Dense(Layer):
         # Flatten the input to be a 2D array (batch_size, input_size)
         flattened_input = input.reshape(input.shape[0], -1)
         # Perform matrix multiplication (input * weights) + bias
-        return np.dot(flattened_input, self.weights) + self.bias
-    
+        output = np.dot(flattened_input, self.weights) + self.bias
+        print(f"Dense layer output shape: {output.shape}")
+        return output
+        
     def backward(self, output_gradient, learning_rate):
         # Compute gradients for weights and bias
         

@@ -13,6 +13,11 @@ class Activation(Layer):
         self.activation = activation
         self.derivative = derivative
 
+        # Check if activation is callable (i.e., a function)
+        if not callable(self.activation):
+            raise TypeError(f"The activation function should be callable, but got {type(self.activation)}")
+
+
     """
     Forward pass of the Activation layer
     @param input: input to the layer
@@ -20,7 +25,9 @@ class Activation(Layer):
     """
     def forward(self, input):
         self.input = input
-        return self.activation(self.input)
+        output = self.activation(input)
+        print(f"Activation layer output shape: {output.shape}")
+        return output
     
     def backward(self, output_gradient, learning_rate):
         return np.multiply(output_gradient, self.derivative(self.input))
