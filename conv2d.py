@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import signal
 from layer import Layer
 
 """
@@ -15,6 +14,7 @@ class Conv2D(Layer):
         self.depth = depth
 
         self.input_H, self.input_W, self.input_D = input_shape
+        self.input_shape = input_shape
 
         self.kerner_size = kernel_size
         self.kernel_H = kernel_size
@@ -52,8 +52,8 @@ class Conv2D(Layer):
             for j in range(self.input_D):
                 #  self.output[i] += signal.correlate2d(self.input[j], self.kernels[i, j], "valid")
                 # Slide the kernel over the input and perform element-wise multiplication
-                for y in range(self.output_shape[1]-1):  # Height
-                    for x in range(self.output_shape[2]-1):  # Width
+                for y in range(self.output_shape[1]):  # Height
+                    for x in range(self.output_shape[2]):  # Width
                         region = self.input[y:y+self.kernel_H, x:x+self.kernel_W, j]
                         # print("y", y, "x", x, "i", i, "j", j)
                         if region.shape == self.kernels[i, j].shape:
@@ -69,14 +69,20 @@ class Conv2D(Layer):
     """
     def backward(self, output_gradient, learning_rate):
         kernels_gradient = np.zeros(self.kernels.shape)
-        image_gradient = np.zeros(self.image_shape)
+        input_gradient = np.zeros(self.input_shape)
 
         for i in range(self.depth):
-            for j in range(self.image_D):
-                kernels_gradient[i, j] = signal.correlate2d(self.image[j], output_gradient[i], "valid")
-                image_gradient[j] += signal.convolve2d(output_gradient[i], self.kernels[i, j], "full")
-        
-        self.kernels -= learning_rate * kernels_gradient
-        self.biases -= learning_rate * np.sum(output_gradient, axis=(1, 2))
+            for j in range(self.input_D):
+                for y in range(self.output_shape[0]):  # Use correct height index
+                    for x in range(self.output_shape[1]):  # Use correct width index
+                        # print("y", y, "x", x, "i", i, "j", j)
+                        region = self.input[y:y+self.kernel_H, x:x+self.kernel_W, j]
+                        
+                        if region.shape == self.kernels[i, j].shape:
+                            kernels_gradient[i, j] += np.sum(region * output_gradient[y, x, i])
 
-        return image_gradient
+        self.kernels -= learning_rate * kernels_gradient
+        self.biases -= learning_rate * np.sum(output_gradient, axis=(0, 1), keepdims=True)
+
+        return input_gradient
+

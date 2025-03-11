@@ -21,7 +21,6 @@ class Dense(Layer):
         try:
             output = np.dot(reshaped_input, self.weights) + self.bias
         except:
-            print("Error in Dense forward pass")
             output = np.dot(reshaped_input.T, self.weights) + self.bias
 
         return output
