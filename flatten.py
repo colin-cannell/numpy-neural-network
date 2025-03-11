@@ -13,7 +13,6 @@ class Flatten(Layer):
     def forward(self, input):
         self.input_shape = input.shape  # Save original shape for backprop
         self.output = input.reshape(input.shape[0], -1)  # Flatten input
-        print(f"📤 Output shape from Flatten: {self.output.shape}")
         return self.output
 
 

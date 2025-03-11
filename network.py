@@ -22,8 +22,9 @@ class NeuralNetwork:
         """
         output = input
         for layer in self.layers:
-            print(f"Input shape: {output.shape} for layer: {layer.__class__.__name__}")
+            # print(f"Input shape: {output.shape} for layer: {layer.__class__.__name__}")
             output = layer.forward(output)
+            # print(f"Output shape: {output.shape} for layer: {layer.__class__.__name__}")
         return output
 
     def backward(self, output_gradient, learning_rate):
@@ -33,7 +34,9 @@ class NeuralNetwork:
         @param learning_rate: learning rate
         """
         for layer in reversed(self.layers):
+            print(f"Output gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
             output_gradient = layer.backward(output_gradient, learning_rate)
+            print(f"Input gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
         return output_gradient
 
     def train(self, x, y, epochs, learning_rate, loss_function=cross_entropy_loss, loss_derivative=cross_entropy_loss_derivative):

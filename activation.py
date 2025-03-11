@@ -20,8 +20,7 @@ class Activation(Layer):
     """
     def forward(self, input):
         self.input = input
-        self.output = self.activation(input)
-        return self.output
+        return self.activation(self.input)
     
-    def backward(self, output_error, learning_rate):
-        return output_error * self.derivative(self.input)
+    def backward(self, output_gradient, learning_rate):
+        return np.multiply(output_gradient, self.derivative(self.input))

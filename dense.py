@@ -21,8 +21,6 @@ class Dense(Layer):
     
     def backward(self, output_gradient, learning_rate):
         # Compute gradients for weights and bias
-        print(f"🔎 input.T: {self.input.T}")
-        print(f"🔎 output_gradient: {output_gradient}")
         
         weights_gradient = np.dot(self.input.T, output_gradient)  # Derivative w.r.t weights
         input_gradient = np.dot(output_gradient, self.weights.T)  # Derivative w.r.t input

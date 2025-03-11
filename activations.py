@@ -1,69 +1,84 @@
 import numpy as np
+from layer import Layer
+from activation import Activation
 
-"""
-Relu activation function introduces non-linearity in the model
-@ param x: input
-"""
-def relu(x):
-    return np.maximum(0, x)
+class Relu(Activation):
+    def __init__(self):
+        def relu(x):
+            np.maximum(0, x)
 
-"""
-Sigmoid activation function takes in any real number and returns the output between 0 and 1
-@ param x: input
-"""
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+        def relu_prime(x):
+            return np.where(x > 0, 1, 0)
 
-"""
-Tanh activation function takes in any real number and returns the output between -1 and 1
-@ param x: input
-"""
-def tanh(x):
-    return np.tanh(x)
-
-"""
-Softmax activation function takes in any real number and returns the output between 0 and 1
-@ param x: input
-"""
-def softmax(x):
-    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))  # Avoid overflow by subtracting max
-    out = e_x / np.sum(e_x, axis=1, keepdims=True)
-    # print(f"🔎 Softmax output: {out}")
-    return out
+        super().__init__(relu, relu_prime)
 
 
-"""
-Cross entropy loss function
-@param y_true: true labels
-@param y_pred: predicted labels
-"""
-def cross_entropy_loss(y_true, y_pred):
-    # reshape matrices to match
-    # print(f"pred: {y_pred.shape}")
-    # print(f"true: {y_true.shape}")
+class Sigmoid(Activation):
+   def __init__(self):
+        def sigmoid(x):
+            return 1 / (1 + np.exp(-x))
 
-    return -np.sum(y_true * np.log(y_pred + 1e-10)) / y_true.shape[0]
+        def sigmoid_prime(x):
+            x = sigmoid(x)
+            return x * (1 - x)
+        
+        super().__init__(sigmoid, sigmoid_prime)
 
-"""
-Cross entropy loss derivative
-@param y_true: true labels
-@param y_pred: predicted labels
-"""
-def cross_entropy_loss_derivative(y_true, y_pred):
-    return -y_true / (y_pred + 1e-10)
 
-"""
-Mean squared error loss function
-@param y_true: true labels
-@param y_pred: predicted labels
-"""
-def mean_squared_error_loss(y_true, y_pred):
-    return np.mean((y_true - y_pred) ** 2)
+class Tanh(Activation):
+    def __init__(self):
+        def tanh(x):
+            return np.tanh(x)
 
-"""
-Mean squared error loss derivative
-@param y_true: true labels
-@param y_pred: predicted labels
-"""
-def mean_squared_error_loss_derivative(y_true, y_pred):
-    return 2 * (y_pred - y_true) / y_true.size
+        def tanh_prime(x):
+            return 1 - np.tanh(x) ** 2
+        
+        super().__init__(tanh, tanh_prime)
+
+
+class Softmax(Layer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input):
+        self.input = input
+        exp_input = np.exp(input - np.max(input, axis=-1, keepdims=True))  # For numerical stability
+        self.output = exp_input / np.sum(exp_input, axis=-1, keepdims=True)
+        return self.output
+
+    def backward(self, output_gradient, learning_rate):
+        n = self.output.shape[1]
+        jacobian = np.diagflat(self.output) - np.outer(self.output, self.output)
+        return np.dot(jacobian, output_gradient)
+
+
+class CrossEntropyLoss(Layer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        # Clip values to avoid log(0) issues
+        self.y_true = y_true
+        self.y_pred = np.clip(y_pred, 1e-10, 1 - 1e-10)
+        loss = -np.sum(y_true * np.log(self.y_pred)) / y_true.shape[0]
+        return loss
+
+    def backward(self, output_gradient, learning_rate):
+        # Gradient of cross-entropy loss with respect to y_pred
+        return (self.y_pred - self.y_true) / self.y_true.shape[0]
+
+
+class MeanSquaredErrorLoss(Layer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        self.y_true = y_true
+        self.y_pred = y_pred
+        loss = np.mean((y_true - y_pred) ** 2)
+        return loss
+
+    def backward(self, output_gradient, learning_rate):
+        return 2 * (self.y_pred - self.y_true) / self.y_true.shape[0]
+
+

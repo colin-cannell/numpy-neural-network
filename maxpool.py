@@ -39,7 +39,6 @@ class MaxPool(Layer):
                     region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
                     output[y, x, c] = np.max(region)
 
-        print(f"📤 Output shape from MaxPool: {output.shape}")
         return output
 
     def backward(self, output_gradient):
