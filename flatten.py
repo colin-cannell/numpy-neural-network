@@ -14,6 +14,7 @@ class Flatten(Layer):
         self.input_shape = input.shape  # Save original shape for backprop
         return input.reshape(input.shape[0], -1)  # Preserve batch size
 
+
     """
     Backward pass of the Flatten layer
     @param output_gradient: gradient of the loss with respect to the output

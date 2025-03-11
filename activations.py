@@ -35,6 +35,7 @@ Cross entropy loss function
 @param y_pred: predicted labels
 """
 def cross_entropy_loss(y_true, y_pred):
+    # reshape matrices to match
     return -np.sum(y_true * np.log(y_pred + 1e-10)) / y_true.shape[0]
 
 """

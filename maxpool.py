@@ -9,7 +9,7 @@ class MaxPool(Layer):
     @param pool_size: size of the pooling region
     @param strides: strides of the pooling
     """
-    def __init__(self, pool_size=2, stride=1):
+    def __init__(self, pool_size=2, stride=2):
         self.pool_size = pool_size
         self.strides = stride
     
@@ -20,6 +20,7 @@ class MaxPool(Layer):
     """
     def forward(self, input):
         self.input = input
+        print(f"🔎 Input shape to MaxPool: {self.input.shape}")
         
         # Input dimensions
         input_C, input_H, input_W = input.shape
@@ -32,11 +33,12 @@ class MaxPool(Layer):
         output = np.zeros((input_C, output_H, output_W))
 
         for c in range(input_C):  # Iterate over channels
-            for i in range(0, output_H):
-                for j in range(0, output_W):
-                    region = self.input[c, i*self.strides:i*self.strides+self.pool_size, j*self.strides:j*self.strides+self.pool_size]
-                    output[c, i, j] = np.max(region)
-
+            for y in range(output_H):
+                for x in range(output_W):
+                    # print(f"🔎 Region: C:{c}, Y:{y}, X:{x}")
+                    region = self.input[c, y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size]
+                    output[c, y, x] = np.max(region)
+                    
         return output
 
     
