@@ -6,6 +6,8 @@ from flatten import Flatten
 from maxpool import MaxPool
 from dropout import Dropout
 from network import NeuralNetwork
+from activation import Activation
+from activations import *
 
 train_images_path = "MNIST_ORG/train-images.idx3-ubyte"
 train_labels_path = "MNIST_ORG/train-labels.idx1-ubyte"
@@ -44,17 +46,30 @@ train_labels = train_labels.reshape(-1, 10)
 # Define the model architecture
 model = NeuralNetwork()
 
-# Convolutional layers
-model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=(3, 3), depth=32))
-model.add(MaxPool(pool_size=2, strides=2))
+# **Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
+model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=(3, 3), depth=32))  
+model.add(Activation(relu, None))
 
-# Flatten the output
-model.add(Flatten())  
+# **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
+model.add(MaxPool(pool_size=2, stride=2))
 
-# Dense layers
-model.add(Dense(6272, 128))  # Match 6272 input neurons to 128 output neurons
-model.add(Dropout(rate=0.5))
+# **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
+model.add(Conv2D(input_shape=(13, 13, 32), kernel_size=(3, 3), depth=64))
+model.add(Activation(relu, None))
+
+# **MaxPooling Layer**: Downsampling again
+model.add(MaxPool(pool_size=2, stride=2))
+
+# **Flatten Layer**: Converts 2D feature maps into a 1D vector 
+model.add(Flatten())
+
+# **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
+model.add(Dense(1600, 128))
+model.add(Activation(relu, None))
+
+# **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
 model.add(Dense(128, 10))
+model.add(Activation(softmax, None))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01)

@@ -1,7 +1,9 @@
 import numpy as np
-from activation import Activation
-from activation import cross_entropy_loss, cross_entropy_loss_derivative
+from activations import *
 
+"""
+Neural network class that defines the architecture of the network
+"""
 class NeuralNetwork:
     def __init__(self):
         self.layers = []
