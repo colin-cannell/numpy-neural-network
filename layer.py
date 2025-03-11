@@ -8,5 +8,5 @@ class Layer:
     def forward(self, input):
         raise NotImplementedError
 
-    def backward(self):
+    def backward(self, output_gradient, learning_rate):
         pass

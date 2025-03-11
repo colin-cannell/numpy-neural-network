@@ -59,6 +59,7 @@ class Conv2D(Layer):
                         if region.shape == self.kernels[i, j].shape:
                             self.output[y, x, i] += np.sum(region * self.kernels[i, j])
 
+        print(f"📤 Output shape from Conv2D: {self.output.shape}")
         return self.output
 
     """

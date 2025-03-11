@@ -12,6 +12,7 @@ class Dense(Layer):
         self.bias = np.random.randn(output_size)
 
     def forward(self, input):
+        self.input = input
         self.input_shape = input.shape  # Save original shape for backward pass
         # Flatten the input to be a 2D array (batch_size, input_size)
         flattened_input = input.reshape(input.shape[0], -1)
@@ -19,9 +20,11 @@ class Dense(Layer):
         return np.dot(flattened_input, self.weights) + self.bias
     
     def backward(self, output_gradient, learning_rate):
-        # Gradient with respect to the weights and input
-        flattened_input = self.input.reshape(self.input_shape[0], -1)
-        weights_gradient = np.dot(flattened_input.T, output_gradient)  # Derivative w.r.t weights
+        # Compute gradients for weights and bias
+        print(f"🔎 input.T: {self.input.T}")
+        print(f"🔎 output_gradient: {output_gradient}")
+        
+        weights_gradient = np.dot(self.input.T, output_gradient)  # Derivative w.r.t weights
         input_gradient = np.dot(output_gradient, self.weights.T)  # Derivative w.r.t input
 
         # Update weights and biases
@@ -29,3 +32,5 @@ class Dense(Layer):
         self.bias -= learning_rate * np.sum(output_gradient, axis=0)
 
         return input_gradient
+
+

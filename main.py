@@ -68,7 +68,7 @@ model.add(Flatten())
 # Calculate the number of features after the last MaxPool layer
 # Output of second Conv2D: (64, 6, 6) -> Flatten to 64 * 6 * 6 = 2304 features
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(2304, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
+model.add(Dense(768, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
 model.add(Activation(relu, None))
 
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 

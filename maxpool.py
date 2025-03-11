@@ -39,6 +39,26 @@ class MaxPool(Layer):
                     region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
                     output[y, x, c] = np.max(region)
 
+        print(f"📤 Output shape from MaxPool: {output.shape}")
         return output
 
-    
+    def backward(self, output_gradient):
+        # Initialize the gradient with zeros
+        input_gradient = np.zeros_like(self.input)
+
+        input_H, input_W, input_C = self.input.shape
+        output_H, output_W, _ = output_gradient.shape
+
+        for c in range(input_C):  # Iterate over channels
+            for y in range(output_H):
+                for x in range(output_W):
+                    # Get the region from the forward pass
+                    region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
+                    
+                    # Find the location of the max value in the region
+                    max_index = np.unravel_index(np.argmax(region), region.shape)
+                    
+                    # Set the gradient at the max location to the corresponding gradient from the output
+                    input_gradient[y*self.strides + max_index[0], x*self.strides + max_index[1], c] = output_gradient[y, x, c]
+        
+        return input_gradient

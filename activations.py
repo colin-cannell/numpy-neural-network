@@ -26,8 +26,11 @@ Softmax activation function takes in any real number and returns the output betw
 @ param x: input
 """
 def softmax(x):
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0)
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))  # Avoid overflow by subtracting max
+    out = e_x / np.sum(e_x, axis=1, keepdims=True)
+    # print(f"🔎 Softmax output: {out}")
+    return out
+
 
 """
 Cross entropy loss function
@@ -36,8 +39,8 @@ Cross entropy loss function
 """
 def cross_entropy_loss(y_true, y_pred):
     # reshape matrices to match
-    print(f"pred: {y_pred.shape}")
-    print(f"true: {y_true.shape}")
+    # print(f"pred: {y_pred.shape}")
+    # print(f"true: {y_true.shape}")
 
     return -np.sum(y_true * np.log(y_pred + 1e-10)) / y_true.shape[0]
 
