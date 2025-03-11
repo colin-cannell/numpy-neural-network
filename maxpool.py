@@ -20,25 +20,25 @@ class MaxPool(Layer):
     """
     def forward(self, input):
         self.input = input
-        print(f"🔎 Input shape to MaxPool: {self.input.shape}")
+        # print(f"🔎 Input shape to MaxPool: {self.input.shape}")
         
         # Input dimensions
-        input_C, input_H, input_W = input.shape
+        input_H, input_W, input_C, = input.shape
         
         # Output dimensions after pooling
         output_H = (input_H - self.pool_size) // self.strides + 1
         output_W = (input_W - self.pool_size) // self.strides + 1
         
         # Output array shape (channels, height, width)
-        output = np.zeros((input_C, output_H, output_W))
+        output = np.zeros((output_H, output_W, input_C))
 
         for c in range(input_C):  # Iterate over channels
             for y in range(output_H):
                 for x in range(output_W):
                     # print(f"🔎 Region: C:{c}, Y:{y}, X:{x}")
-                    region = self.input[c, y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size]
-                    output[c, y, x] = np.max(region)
-                    
+                    region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
+                    output[y, x, c] = np.max(region)
+
         return output
 
     

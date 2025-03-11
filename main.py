@@ -30,10 +30,10 @@ def load_mnist_labels(filename):
         labels = np.frombuffer(f.read(), dtype='>u1')
     return labels
 
-print("Loading MNIST dataset...")
+# print("Loading MNIST dataset...")
 train_images = load_mnist_images(train_images_path)
 train_labels = load_mnist_labels(train_labels_path)
-print("Loaded MNIST dataset")
+# print("Loaded MNIST dataset")
 
 # Normalize the images
 train_images = train_images / 255.0
@@ -65,9 +65,14 @@ model.add(MaxPool(pool_size=2, stride=2))
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
 model.add(Flatten())
 
+# Calculate the number of features after the last MaxPool layer
+# Output of second Conv2D: (64, 6, 6) -> Flatten to 64 * 6 * 6 = 2304 features
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(1600, 128))
+model.add(Dense(2304, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
 model.add(Activation(relu, None))
+
+# **Flatten Layer**: Converts 2D feature maps into a 1D vector 
+model.add(Flatten())
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
 model.add(Dense(128, 10))

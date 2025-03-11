@@ -27,9 +27,9 @@ class Conv2D(Layer):
         # print(f"🔎 Kernel shape: {self.kernel_shape}")
         self.kernels = np.random.randn(*self.kernel_shape)
 
-        self.output_shape = (depth,
-                            self.input_H - self.kernel_H + 1, 
-                            self.input_W - self.kernel_W + 1)
+        self.output_shape = (self.input_H - self.kernel_H + 1, 
+                            self.input_W - self.kernel_W + 1,
+                            depth)
         
         self.biases = np.random.randn(*self.output_shape)
 
@@ -57,7 +57,7 @@ class Conv2D(Layer):
                         region = self.input[y:y+self.kernel_H, x:x+self.kernel_W, j]
                         # print("y", y, "x", x, "i", i, "j", j)
                         if region.shape == self.kernels[i, j].shape:
-                            self.output[i, y, x] += np.sum(region * self.kernels[i, j])
+                            self.output[y, x, i] += np.sum(region * self.kernels[i, j])
 
         return self.output
 

@@ -22,6 +22,7 @@ class NeuralNetwork:
         """
         output = input
         for layer in self.layers:
+            print(f"Input shape: {output.shape} for layer: {layer.__class__.__name__}")
             output = layer.forward(output)
         return output
 
