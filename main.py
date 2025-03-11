@@ -45,19 +45,22 @@ train_images = train_images.reshape(60000, 28, 28, 1)
 train_labels = np.eye(10)[train_labels]
 train_labels = train_labels.reshape(-1, 10)
 
+relu = Relu()
+softmax = Softmax()
+
 # Define the model architecture
 model = NeuralNetwork()
 
 # **Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=3, depth=32))  
-model.add(Activation(Relu().forward, Relu().backward))
+model.add(Activation(relu.relu, relu.relu_prime))
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
 model.add(MaxPool(pool_size=2, stride=2))
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=(26, 26, 1), kernel_size=3, depth=64))  # Updated input shape
-model.add(Activation(Relu().forward, Relu().backward))
+model.add(Activation(relu.relu, relu.relu_prime))
 
 # **MaxPooling Layer**: Downsampling again
 model.add(MaxPool(pool_size=2, stride=2))
@@ -67,11 +70,11 @@ model.add(Flatten())
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
 model.add(Dense(768, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
-model.add(Activation(Relu().forward, Relu().backward))
+model.add(Activation(relu.relu, relu.relu_prime))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
 model.add(Dense(128, 10))
-model.add(Activation(Softmax().forward, Softmax().backward))
+model.add(Activation(softmax.forward, softmax.backward))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01)

@@ -2,38 +2,29 @@ import numpy as np
 from layer import Layer
 from activation import Activation
 
-class Relu(Activation):
-    def __init__(self):
-        def relu(x):
-            np.maximum(0, x)
+class Relu:
+    def relu(self, x):
+        return np.maximum(0, x)
 
-        def relu_prime(x):
-            return np.where(x > 0, 1, 0)
-
-        super().__init__(relu, relu_prime)
+    def relu_prime(self, x):
+        return np.where(x > 0, 1, 0)
 
 
-class Sigmoid(Activation):
-   def __init__(self):
-        def sigmoid(x):
-            return 1 / (1 + np.exp(-x))
+class Sigmoid:
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
 
-        def sigmoid_prime(x):
-            x = sigmoid(x)
-            return x * (1 - x)
-        
-        super().__init__(sigmoid, sigmoid_prime)
+    def sigmoid_prime(self, x):
+        x = 1 / (1 + np.exp(-x))
+        return x * (1 - x)
 
 
-class Tanh(Activation):
-    def __init__(self):
-        def tanh(x):
-            return np.tanh(x)
+class Tanh:
+    def tanh(self, x):
+        return np.tanh(x)
 
-        def tanh_prime(x):
-            return 1 - np.tanh(x) ** 2
-        
-        super().__init__(tanh, tanh_prime)
+    def tanh_prime(self, x):
+        return 1 - np.tanh(x) ** 2
 
 
 class Softmax(Layer):
@@ -80,5 +71,3 @@ class MeanSquaredErrorLoss(Layer):
 
     def backward(self, output_gradient, learning_rate):
         return 2 * (self.y_pred - self.y_true) / self.y_true.shape[0]
-
-
