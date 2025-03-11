@@ -12,12 +12,9 @@ class Dense(Layer):
         self.bias = np.random.randn(output_size)
 
     def forward(self, input):
-        self.input = input
-        return np.dot(self.input, self.weights) + self.bias
+        self.input_shape = input.shape  # Save original shape for backward pass
+        return input.reshape(input.shape[0], -1)  # Keep batch size
     
     def backward(self, output_gradient, learning_rate):
-        weights_gradient = np.dot(output_gradient, self.input.T)
-        input_gradient = np.dot(self.weights.T, output_gradient)
-        self.weights -= learning_rate * weights_gradient
-        self.bias -= learning_rate * output_gradient
-        return input_gradient      
+        return output_gradient.reshape(self.input_shape)  # Restore original shape
+    
