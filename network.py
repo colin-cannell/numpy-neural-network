@@ -39,7 +39,7 @@ class NeuralNetwork:
         """
         Trains the model using the given data
         @param x: input data
-        @param y: target data
+        @param y: validation data
         @param epochs: number of epochs
         @param learning_rate: learning rate
         """
@@ -47,6 +47,7 @@ class NeuralNetwork:
             loss = 0
             correct = 0
             for xi, yi in zip(x, y):
+                print(f"Training on sample: {xi.shape}")
                 output = self.forward(xi)
                 loss += loss_function(yi, output)
                 

@@ -37,8 +37,10 @@ print("Loaded MNIST dataset")
 
 # Normalize the images
 train_images = train_images / 255.0
-# Reshape the images to 28x28 with the channel dimension (grayscale)
-train_images = train_images.reshape(-1, 28, 28, 1)
+
+# Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
+train_images = train_images.reshape(60000, 28, 28, 1)
+
 # One hot encode the labels
 train_labels = np.eye(10)[train_labels]
 train_labels = train_labels.reshape(-1, 10)
@@ -47,14 +49,14 @@ train_labels = train_labels.reshape(-1, 10)
 model = NeuralNetwork()
 
 # **Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=(3, 3), depth=32))  
+model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=3, depth=32))  
 model.add(Activation(relu, None))
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
 model.add(MaxPool(pool_size=2, stride=2))
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=(13, 13, 32), kernel_size=(3, 3), depth=64))
+model.add(Conv2D(input_shape=(26, 26, 1), kernel_size=3, depth=64))  # Updated input shape
 model.add(Activation(relu, None))
 
 # **MaxPooling Layer**: Downsampling again
@@ -73,6 +75,7 @@ model.add(Activation(softmax, None))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01)
+
 
 # Save the model
 with open("model.pkl", "wb") as f:
