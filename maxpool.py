@@ -9,9 +9,9 @@ class MaxPool(Layer):
     @param pool_size: size of the pooling region
     @param strides: strides of the pooling
     """
-    def __init__(self, pool_size=2, strides=2):
+    def __init__(self, pool_size=2, stride=2):
         self.pool_size = pool_size
-        self.strides = strides
+        self.strides = stride
     
     """
     Forward pass of the MaxPool layer

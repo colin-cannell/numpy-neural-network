@@ -10,3 +10,8 @@ class Activation(Layer):
     def __init__(self, activation, derivative):
         self.activation = activation
         self.derivative = derivative
+
+    def forward(self, input):
+        self.input = input
+        self.output = self.activation(input)
+        return self.output
