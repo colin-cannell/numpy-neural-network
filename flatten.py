@@ -11,9 +11,8 @@ class Flatten(Layer):
     @return: flattened output
     """
     def forward(self, input):
-        self.input_shape = input.shape  # Save original shape for backprop
-        self.output = input.reshape(input.shape[0], -1)  # Flatten input
-        print(f"Flatten layer output shape: {self.output.shape}")
+        self.input_shape = input.shape  # Save original shape for backward pass
+        self.output = input.flatten()
         return self.output
 
 
@@ -24,13 +23,8 @@ class Flatten(Layer):
     @return: gradient of the input
     """
     def backward(self, output_gradient, learning_rate):
-        # Gradient with respect to the weights and input
-        flattened_input = self.input_shape.reshape(self.input_shape[0], -1)
-        weights_gradient = np.dot(flattened_input.T, output_gradient)  # Derivative w.r.t weights
-        input_gradient = np.dot(output_gradient, self.weights.T)  # Derivative w.r.t input
-
-        # Update weights and biases
-        self.weights -= learning_rate * weights_gradient
-        self.bias -= learning_rate * np.sum(output_gradient, axis=0)
-
+        # Reshape the output gradient to match the input shape
+        input_gradient = output_gradient.reshape(self.input_shape)
+        
+        # No weights in the Flatten layer, just pass the gradient back
         return input_gradient

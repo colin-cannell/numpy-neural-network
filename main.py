@@ -69,7 +69,7 @@ model.add(MaxPool(pool_size=2, stride=2))
 model.add(Flatten())
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(768, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
+model.add(Dense(9216, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
 model.add(Activation(relu.relu, relu.relu_prime))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation

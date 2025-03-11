@@ -26,8 +26,7 @@ class Activation(Layer):
     def forward(self, input):
         self.input = input
         output = self.activation(input)
-        print(f"Activation layer output shape: {output.shape}")
         return output
     
-    def backward(self, output_gradient, learning_rate):
+    def backward(self, output_gradient, learning_rate=None):
         return np.multiply(output_gradient, self.derivative(self.input))

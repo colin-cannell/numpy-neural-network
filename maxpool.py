@@ -41,7 +41,7 @@ class MaxPool(Layer):
 
         return output
 
-    def backward(self, output_gradient):
+    def backward(self, output_gradient, learning_rate=None):
         # Initialize the gradient with zeros
         input_gradient = np.zeros_like(self.input)
 

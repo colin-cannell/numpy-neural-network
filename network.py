@@ -39,7 +39,7 @@ class NeuralNetwork:
             print(f"Input gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
         return output_gradient
 
-    def train(self, x, y, epochs, learning_rate, loss_function=CrossEntropyLoss(), loss_derivative=CrossEntropyLoss()):
+    def train(self, x, y, epochs, learning_rate, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward):
         """
         Trains the model using the given data
         @param x: input data

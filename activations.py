@@ -37,12 +37,28 @@ class Softmax(Layer):
         self.output = exp_input / np.sum(exp_input, axis=-1, keepdims=True)
         return self.output
 
-    def backward(self, output_gradient, learning_rate):
-        n = self.output.shape[1]
-        jacobian = np.diagflat(self.output) - np.outer(self.output, self.output)
-        return np.dot(jacobian, output_gradient)
+    def backward(self, output_gradient, learning_rate=None):
+        batch_size = self.output.shape[0]  # Get the batch size
+        num_classes = self.output.shape[1]  # Number of classes
+        
+        # Initialize an empty list for the gradients
+        jacobian_list = []
+        
+        # For each sample in the batch
+        for i in range(batch_size):
+            # Compute the Jacobian matrix for the current sample (i-th example)
+            jacobian = np.diag(self.output[i]) - np.outer(self.output[i], self.output[i])
+            jacobian_list.append(jacobian)
+        
+        # Stack the Jacobians into a matrix of shape (batch_size, num_classes, num_classes)
+        jacobian_matrix = np.array(jacobian_list)
+        
+        # The gradient is the dot product of output_gradient and the Jacobian, for each sample
+        gradients = np.einsum('ij,ijk->ik', output_gradient, jacobian_matrix)
 
-
+        # Average the gradients over the batch
+        return gradients / batch_size
+    
 class CrossEntropyLoss(Layer):
     def __init__(self):
         super().__init__()
@@ -54,9 +70,9 @@ class CrossEntropyLoss(Layer):
         loss = -np.sum(y_true * np.log(self.y_pred)) / y_true.shape[0]
         return loss
 
-    def backward(self, output_gradient, learning_rate):
+    def backward(self, y_true, y_pred):
         # Gradient of cross-entropy loss with respect to y_pred
-        return (self.y_pred - self.y_true) / self.y_true.shape[0]
+        return (y_pred - y_true) / y_true.shape[0]
 
 
 class MeanSquaredErrorLoss(Layer):
@@ -69,5 +85,5 @@ class MeanSquaredErrorLoss(Layer):
         loss = np.mean((y_true - y_pred) ** 2)
         return loss
 
-    def backward(self, output_gradient, learning_rate):
-        return 2 * (self.y_pred - self.y_true) / self.y_true.shape[0]
+    def backward(self, y_true, y_pred):
+        return 2 * (y_pred - y_true) / y_true.shape[0]
