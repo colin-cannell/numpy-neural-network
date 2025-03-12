@@ -24,7 +24,8 @@ class Flatten(Layer):
     """
     def backward(self, output_gradient, learning_rate):
         # Reshape the output gradient to match the input shape
-        input_gradient = output_gradient.reshape(self.input_shape)
-        
+        # print(f"🔄 Flatten Backward: output_gradient.shape = {output_gradient.shape}, input.shape = {self.input_shape}")
+        output_gradient = output_gradient.reshape(self.input_shape)
+        # print(f"🔄 Flatten Backward: output_gradient.shape = {output_gradient.shape}, input.shape = {self.input_shape}")
         # No weights in the Flatten layer, just pass the gradient back
-        return input_gradient
+        return output_gradient

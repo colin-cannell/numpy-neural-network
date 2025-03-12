@@ -46,18 +46,29 @@ class MaxPool(Layer):
         input_gradient = np.zeros_like(self.input)
 
         input_H, input_W, input_C = self.input.shape
-        output_H, output_W, _ = output_gradient.shape
+        output_H, output_W, output_C = output_gradient.shape
 
-        for c in range(input_C):  # Iterate over channels
+        for c in range(output_C):  # Iterate over channels
             for y in range(output_H):
                 for x in range(output_W):
+                    # Ensure we don't go out of bounds when slicing
+                    y_start = y * self.strides
+                    x_start = x * self.strides
+                    y_end = min(y_start + self.pool_size, input_H)
+                    x_end = min(x_start + self.pool_size, input_W)
+
                     # Get the region from the forward pass
-                    region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
-                    
-                    # Find the location of the max value in the region
-                    max_index = np.unravel_index(np.argmax(region), region.shape)
-                    
-                    # Set the gradient at the max location to the corresponding gradient from the output
-                    input_gradient[y*self.strides + max_index[0], x*self.strides + max_index[1], c] = output_gradient[y, x, c]
-        
+                    region = self.input[y_start:y_end, x_start:x_end, c]
+
+                    if region.size > 0:
+                        max_index = np.unravel_index(np.argmax(region), region.shape)
+                        h_index = y_start + max_index[0]
+                        w_index = x_start + max_index[1]
+
+                        if h_index < input_H and w_index < input_W:
+                            # Ensure correct accumulation across all channels
+                            input_gradient[h_index, w_index, c] += output_gradient[y, x, c]
+
+        # Return the computed input gradients
         return input_gradient
+

@@ -22,9 +22,9 @@ class NeuralNetwork:
         """
         output = input
         for layer in self.layers:
-            print(f"Input shape: {output.shape} for layer: {layer.__class__.__name__}")
+            print(f"Forward Input shape: {output.shape} for layer: {layer.__class__.__name__}")
             output = layer.forward(output)
-            print(f"Output shape: {output.shape} for layer: {layer.__class__.__name__}")
+            print(f"Forward Output shape: {output.shape} for layer: {layer.__class__.__name__}")
         return output
 
     def backward(self, output_gradient, learning_rate):
@@ -34,9 +34,9 @@ class NeuralNetwork:
         @param learning_rate: learning rate
         """
         for layer in reversed(self.layers):
-            print(f"Output gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
+            print(f"Backward Output gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
             output_gradient = layer.backward(output_gradient, learning_rate)
-            print(f"Input gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
+            print(f"Backward Input gradient shape: {output_gradient.shape} for layer: {layer.__class__.__name__}")
         return output_gradient
 
     def train(self, x, y, epochs, learning_rate, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward):
@@ -48,6 +48,7 @@ class NeuralNetwork:
         @param learning_rate: learning rate
         """
         for epoch in range(epochs):
+            print(f"Epoch {epoch+1}/{epochs}")
             loss = 0
             correct = 0
             for xi, yi in zip(x, y):

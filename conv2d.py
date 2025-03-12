@@ -73,13 +73,13 @@ class Conv2D(Layer):
 
         for i in range(self.depth):
             for j in range(self.input_D):
-                for y in range(self.output_shape[0]):  # Use correct height index
-                    for x in range(self.output_shape[1]):  # Use correct width index
-                        # print("y", y, "x", x, "i", i, "j", j)
+                for y in range(self.output_shape[0]):  # Height
+                    for x in range(self.output_shape[1]):  # Width
                         region = self.input[y:y+self.kernel_H, x:x+self.kernel_W, j]
-                        
                         if region.shape == self.kernels[i, j].shape:
                             kernels_gradient[i, j] += np.sum(region * output_gradient[y, x, i])
+                            # Compute the gradient for the input
+                            input_gradient[y:y+self.kernel_H, x:x+self.kernel_W, j] += self.kernels[i, j] * output_gradient[y, x, i]
 
         self.kernels -= learning_rate * kernels_gradient
         self.biases -= learning_rate * np.sum(output_gradient, axis=(0, 1), keepdims=True)
