@@ -35,11 +35,14 @@ train_images = load_mnist_images(train_images_path)
 train_labels = load_mnist_labels(train_labels_path)
 # print("Loaded MNIST dataset")
 
+train_images = train_images[:100]
+train_labels = train_labels[:100]
+
 # Normalize the images
 train_images = train_images / 255.0
 
 # Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
-train_images = train_images.reshape(60000, 28, 28, 1)
+train_images = train_images.reshape(100, 28, 28, 1)
 
 # One hot encode the labels
 train_labels = np.eye(10)[train_labels]
@@ -77,7 +80,7 @@ model.add(Dense(128, 10))
 model.add(Activation(softmax.forward, softmax.backward))
 
 # Train the model
-model.train(train_images, train_labels, epochs=10, learning_rate=0.01)
+model.train(train_images, train_labels, epochs=10, learning_rate=0.001, loss_function=MeanSquaredErrorLoss().forward, loss_derivative=MeanSquaredErrorLoss().backward)
 
 
 # Save the model
