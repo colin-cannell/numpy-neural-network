@@ -35,54 +35,85 @@ train_images = load_mnist_images(train_images_path)
 train_labels = load_mnist_labels(train_labels_path)
 # print("Loaded MNIST dataset")
 
-train_images = train_images[:100]
-train_labels = train_labels[:100]
+size = 500
+train_images = train_images[:size]
+train_labels = train_labels[:size]
 
-# Normalize the images
+# Normalize the images, puts the numbers on a scale of 0,255 in order to be better read by the network
 train_images = train_images / 255.0
 
-# Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
-train_images = train_images.reshape(100, 28, 28, 1)
+input_shape = (28, 28, 1)
 
-# One hot encode the labels
+# Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
+train_images = train_images.reshape(size, input_shape[0], input_shape[1], input_shape[2])
+
+# create a 2d array with 1s on the diagonal and 0s elsewhere 
 train_labels = np.eye(10)[train_labels]
 train_labels = train_labels.reshape(-1, 10)
 
+# Define the activation functions in use
 relu = Relu()
 softmax = Softmax()
 
 # Define the model architecture
 model = NeuralNetwork()
 
-# **Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=(28, 28, 1), kernel_size=3, depth=32))  
+filters_1 = 32
+filters_2 = 64
+
+kernel_size = 3
+pool_size = 2
+
+dense1_out_neurons = 128
+dense2_out_neurons = 10
+
+conv1_out_shape = model.conv_output_shape(input_shape, kernel_size, filters_1)
+pool1_out_shape = model.maxpool_output_shape(conv1_out_shape, pool_size)
+
+conv2_out_shape = model.conv_output_shape(pool1_out_shape, kernel_size, filters_2)
+pool2_out_shape = model.maxpool_output_shape(conv2_out_shape, pool_size)
+
+flatten_out_shape = model.flatten_output_shape(pool2_out_shape)
+
+dense1_out_shape = model.dense_output_shape(dense1_out_neurons)
+dense2_out_shape = model.dense_output_shape(dense2_out_neurons)
+
+
+# 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
+model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1))
 model.add(Activation(relu.relu, relu.relu_prime))
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
-model.add(MaxPool(pool_size=2, stride=2))
+model.add(MaxPool())
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=(26, 26, 1), kernel_size=3, depth=64))  # Updated input shape
+model.add(Conv2D(input_shape=conv1_out_shape, kernel_size=kernel_size, filters=filters_2)) 
 model.add(Activation(relu.relu, relu.relu_prime))
 
 # **MaxPooling Layer**: Downsampling again
-model.add(MaxPool(pool_size=2, stride=2))
+model.add(MaxPool())
 
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
 model.add(Flatten())
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(9216, 128))  # Update input size to 2304 (output of Flatten layer)model.add(Dense(1600, 128))
-model.add(Activation(relu.relu, relu.relu_prime))
+model.add(Dense(flatten_out_shape[0], dense1_out_neurons))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
-model.add(Dense(128, 10))
+model.add(Dense(dense1_out_neurons, dense2_out_neurons))
 model.add(Activation(softmax.forward, softmax.backward))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.001, loss_function=MeanSquaredErrorLoss().forward, loss_derivative=MeanSquaredErrorLoss().backward)
 
-
-# Save the model
-with open("model.pkl", "wb") as f:
-    pickle.dump(model, f)
+def save_weights(model, filename_prefix):
+    """
+    Save the weights of each layer in the model.
+    @param model: The neural network model.
+    @param filename_prefix: Prefix for the saved weight files.
+    """
+    for i, layer in enumerate(model.layers):
+        weights = layer.get_weights()  # Assuming the layer has a `get_weights` method
+        for j, weight in enumerate(weights):
+            np.save(f"{filename_prefix}_layer_{i}_weight_{j}.npy", weight)  # Save each weight matrix
+    print("Weights saved successfully!")

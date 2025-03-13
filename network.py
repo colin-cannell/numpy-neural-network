@@ -2,7 +2,9 @@ import numpy as np
 from activations import *
 
 """
-Neural network class that defines the architecture of the network
+Neural Network class where layers can be added 
+forward advancement between layers is handled here.
+Backpropogation between layers is handled here.
 """
 class NeuralNetwork:
     def __init__(self):
@@ -11,20 +13,18 @@ class NeuralNetwork:
     def add(self, layer):
         """
         Adds a layer to the network
-        @param layer: layer to add
+        @param layer: layer to be added
         """
         self.layers.append(layer)
     
     def forward(self, input):
         """
-        Forward pass through the network
+        Forward transition between layers through the network
         @param input: input data
         """
         output = input
         for layer in self.layers:
-            # print(f"Forward Input shape: {output.shape} for layer: {layer.__class__.__name__}")
             output = layer.forward(output)
-            # print(f"Forward Output shape: {output.shape} for layer: {layer.__class__.__name__}")
         return output
 
     def backward(self, output_gradient, learning_rate):
@@ -91,9 +91,58 @@ class NeuralNetwork:
 
         return loss_history  # Return loss history for analysis
     
-    def predict(self, x):
+    def predict(self, x): 
+        self.forward(x)
+
+    def conv_output_shape(self, input_shape, kernel_size, filters, stride=1, padding=0):
         """
-        Predict the output for the given input
-        @param x: input data
+        Calculate the output shape of a convolutional layer
+        @param input_shape: input shape
+        @param kernel_size: kernel size
+        @param filters: number of filters
+        @return: output shape
         """
-        return self.forward(x)
+        H, W, D = input_shape
+        k_H = kernel_size
+        k_W = kernel_size
+        H_out = (H - k_H + 2 * padding) // stride + 1
+        W_out = (W - k_W + 2 * padding) // stride + 1
+        return (H_out, W_out, filters)
+
+    def maxpool_output_shape(self, input_shape, pool_size):
+        """
+        Calculate the output shape of a maxpooling layer
+        @param input_shape: input shape
+        @param pool_size: pool size
+        @return: output shape
+        """
+        H, W, D = input_shape
+        H_out = H // pool_size
+        W_out = W // pool_size
+        return (H_out, W_out, D)
+
+    def flatten_output_shape(self, input_shape):
+        """
+        Calculate the output shape of a flatten layer
+        @param input_shape: input shape
+        @return: output shape
+        """
+        H, W, D = input_shape
+        return (H * W * D, )
+
+    def dense_output_shape(self, units):
+        """
+        Calculate the output shape of a dense layer
+        @param input_shape: input shape
+        @param units: number of units
+        @return: output shape
+        """
+        return (units, )
+    
+    def dense_input_shape(self, input_shape):
+        """
+        Calculate the input shape of a dense layer
+        @param input_shape: input shape
+        @return: output shape
+        """
+        return (input_shape, )
