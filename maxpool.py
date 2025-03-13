@@ -20,7 +20,6 @@ class MaxPool(Layer):
     """
     def forward(self, input):
         self.input = input
-        print(f"🔎 Input shape to MaxPool: {self.input.shape}")
         
         # Input dimensions
         input_H, input_W, input_C, = input.shape
@@ -39,7 +38,6 @@ class MaxPool(Layer):
                     region = self.input[y*self.strides:y*self.strides+self.pool_size, x*self.strides:x*self.strides+self.pool_size, c]
                     output[y, x, c] = np.max(region)
 
-        print(f"🔎 Output shape from MaxPool: {output.shape}")
         return output
 
     def backward(self, output_gradient, learning_rate=None):
@@ -48,8 +46,6 @@ class MaxPool(Layer):
 
         input_H, input_W, input_C = self.input.shape
         output_H, output_W, output_C = output_gradient.shape
-
-        print(f"output_gradient shape: {output_gradient.shape}")
 
         for c in range(output_C):  # Iterate over channels
             for y in range(output_H):

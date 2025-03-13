@@ -24,7 +24,9 @@ class NeuralNetwork:
         """
         output = input
         for layer in self.layers:
+            #print(f"Forward Input shape to NeuralNetwork: {output.shape}")
             output = layer.forward(output)
+            #print(f"Forward Output shape from NeuralNetwork: {output.shape}")
         return output
 
     def backward(self, output_gradient, learning_rate):

@@ -9,43 +9,27 @@ class Dense(Layer):
     """
     def __init__(self, input_size, output_size):
         self.weights = np.random.randn(input_size, output_size) * 0.01
-        self.bias = np.random.randn(output_size)
+        self.biases = np.zeros((1, output_size))
+        self.input_shape = np.reshape((input_size,)[0], -1)
+
+        self.output_shape = (output_size, )
 
     def forward(self, input):
         self.input = input
-        print(f"Input shape to Dense: {self.input.shape}")
-        self.input_shape = input.shape
 
-        reshaped_input = input.reshape(input.shape[0], -1)  # Flatten each input image into a vector
-        reshaped_input = reshaped_input.T  # Transpose to shape (1, 9216)
-
-        try:
-            output = np.dot(reshaped_input, self.weights) + self.bias
-        except:
-            output = np.dot(reshaped_input.T, self.weights) + self.bias
-
-        print(f"Output shape from Dense: {output.shape}")
+        output = np.dot(self.input, self.weights) + self.biases
         return output
         
     def backward(self, output_gradient, learning_rate):
         # Compute gradients for weights and bias
+        input_reshaped = self.input.reshape(self.input_shape)  # Flatten the input
         
-        self.input = self.input.reshape(self.input_shape[0], -1)  # Flatten each input image into a vector
-
-        try:
-            weights_gradient = np.dot(self.input, output_gradient)  # Derivative w.r.t weights
-        except:
-            weights_gradient = np.dot(self.input.T, output_gradient)  # Derivative w.r.t weights
-
-        try:
-            input_gradient = np.dot(output_gradient, self.weights)  # Derivative w.r.t input
-        except:
-            input_gradient = np.dot(output_gradient, self.weights.T)  # Derivative w.r.t input
-        
+        weights_gradient = np.dot(input_reshaped.T, output_gradient)
+        input_gradient = np.dot(output_gradient, self.weights.T)
 
         # Update weights and biases
         self.weights -= learning_rate * weights_gradient
-        self.bias -= learning_rate * np.sum(output_gradient, axis=0)
+        self.biases -= learning_rate * np.sum(output_gradient, axis=0)
 
         return input_gradient
 

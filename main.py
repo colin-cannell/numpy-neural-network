@@ -31,23 +31,23 @@ def load_mnist_labels(filename):
     return labels
 
 # print("Loading MNIST dataset...")
-train_images = load_mnist_images(train_images_path)
+train_data = load_mnist_images(train_images_path)
 train_labels = load_mnist_labels(train_labels_path)
 # print("Loaded MNIST dataset")
 
 size = 500
-train_images = train_images[:size]
-train_labels = train_labels[:size]
+train_data = train_data[:size].T
+train_labels = train_labels[:size].T
 
 # Normalize the images, puts the numbers on a scale of 0,255 in order to be better read by the network
-train_images = train_images / 255.0
+train_data = train_data / 255.0
 
 input_shape = (28, 28, 1)
 
 # Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
-train_images = train_images.reshape(size, input_shape[0], input_shape[1], input_shape[2])
+train_data = train_data.reshape(size, input_shape[0], input_shape[1], input_shape[2])
 
-# create a 2d array with 1s on the diagonal and 0s elsewhere 
+# create a 2d array with 1s on the diagonal and 0s elsewhere    
 train_labels = np.eye(10)[train_labels]
 train_labels = train_labels.reshape(-1, 10)
 
@@ -111,7 +111,7 @@ model.add(Dense(dense1_out_neurons, dense2_out_neurons))
 model.add(Activation(softmax.forward, softmax.backward))
 
 # Train the model
-model.train(train_images, train_labels, epochs=10, learning_rate=0.001, loss_function=MeanSquaredErrorLoss().forward, loss_derivative=MeanSquaredErrorLoss().backward)
+model.train(train_data, train_labels, epochs=10, learning_rate=0.01, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward)
 
 def save_weights(model, filename_prefix):
     """
