@@ -13,7 +13,7 @@ class Conv2D(Layer):
     def __init__(self, input_shape, kernel_size, filters, stride=1, padding=0):
         self.filters = filters
 
-        self.input_H, self.input_W, self.input_D = input_shape
+        self.input_H, self.input_W, self.input_C = input_shape
         self.input_shape = input_shape
 
         # The kernel shape is important because it defines the dimensions of the filters applied to the input image, ensuring that:
@@ -21,20 +21,21 @@ class Conv2D(Layer):
         self.kernel_W = kernel_size
 
         self.kernel_shape = (filters, 
-                            self.input_D,
+                            self.input_C,
                             self.kernel_H, 
                             self.kernel_W)
         
         # returns a sample (or samples) from the “standard normal” distribution.
         # kernels is a 4D array of shape (filters, input depth, kernerl hight, kernel width)
         # select random values from a normal distribution with mean 0 and standard deviation 1 to initialize the kernels
-        self.kernels = np.random.randn(filters, self.input_D, self.kernel_H, self.kernel_W)
+        self.kernels = np.random.randn(filters, self.input_C, self.kernel_H, self.kernel_W)
 
 
         # output shape is calculated by subtracting the kernel size from the input size and adding 1
-        self.output_shape = (self.input_H - self.kernel_H + 2 * padding // stride + 1,
-                             self.input_W - self.kernel_W + 2 * padding // stride + 1,
+        self.output_shape = ((self.input_H - self.kernel_H + 2 * padding) // stride + 1,
+                            (self.input_W - self.kernel_W + 2 * padding) // stride + 1,
                             filters)
+
         
         # biases is a 1D array of shape (filters,)
         self.biases = np.random.randn(self.filters)
@@ -46,29 +47,32 @@ class Conv2D(Layer):
     """
     def forward(self, input):
         self.input = input
+
+        print(f"Input shape to Conv2D: {self.input.shape}")
        
         self.output = self.convolve(input)
 
+        print(f"Output shape from Conv2D: {self.output.shape}")
         return self.output
     
-    def convolve(self, input, stride=1, padding=0):
+    def convolve(self, input):
         H, W, D = input.shape  
-        f, _, k_H, k_W = self.kernels.shape  
-
-        # Compute output dimensions
-        output_H = (H - k_H) // stride + 1
-        output_W = (W - k_W) // stride + 1
 
         # Initialize output tensor
-        output = np.zeros((output_H, output_W, f))
+        output = np.zeros(self.output_shape)
 
         # Perform convolution operation
-        for i in range(f):  # Iterate over filters
-            for y in range(output_H):  
-                for x in range(output_W):
-                    region = input[y:y+k_H, x:x+k_W, :]  # Extract region from input
-                    output[y, x, i] = np.sum(region * self.kernels[i, :, :, :])  # Correcting the shape here
-                    output[y, x, i] += self.biases[i]  # Add the bias for this filter
+        for i in range(self.filters):  # Iterate over filters
+            for y in range(self.output_shape[0]):  
+                for x in range(self.output_shape[1]):                    
+                    try:
+                        region = input[y:y+self.kernel_H, x:x+self.kernel_W, :]
+                        output[y, x, i] = np.sum(region.T * self.kernels[i, :, :, :]) 
+                        output[y, x, i] += self.biases[i]  
+                    except:
+                        # print(f"Region shape: {region.T.shape}")
+                        # print(f"Kernel shape: {self.kernels[i, :, :, :].shape}")
+                        pass 
 
         return output
 
@@ -84,10 +88,12 @@ class Conv2D(Layer):
         kernels_gradient = np.zeros(self.kernels.shape)
         input_gradient = np.zeros(self.input_shape)
 
+        print(f"self.input_shape: {self.input_shape}")
+
         for i in range(self.filters):
-            for j in range(self.input_D):
+            for j in range(self.input_C):
                 # Use convolution to compute gradient w.r.t. the kernels
-                kernels_gradient[i, j] = self.convolve(self.input[:, :, j], output_gradient[:, :, i])
+                kernels_gradient[i, j] = self.convolve(self.input, output_gradient[:, :, i])
                 
                 # Compute the gradient of the input
                 input_gradient[:, :, j] += self.deconvolve(output_gradient[:, :, i], self.kernels[i, j])

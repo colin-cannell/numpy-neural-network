@@ -13,6 +13,7 @@ class Dense(Layer):
 
     def forward(self, input):
         self.input = input
+        print(f"Input shape to Dense: {self.input.shape}")
         self.input_shape = input.shape
 
         reshaped_input = input.reshape(input.shape[0], -1)  # Flatten each input image into a vector
@@ -23,6 +24,7 @@ class Dense(Layer):
         except:
             output = np.dot(reshaped_input.T, self.weights) + self.bias
 
+        print(f"Output shape from Dense: {output.shape}")
         return output
         
     def backward(self, output_gradient, learning_rate):

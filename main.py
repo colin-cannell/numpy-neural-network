@@ -68,15 +68,22 @@ dense1_out_neurons = 128
 dense2_out_neurons = 10
 
 conv1_out_shape = model.conv_output_shape(input_shape, kernel_size, filters_1)
+print(f"Conv1 output shape: {conv1_out_shape}")
 pool1_out_shape = model.maxpool_output_shape(conv1_out_shape, pool_size)
+print(f"Pool1 output shape: {pool1_out_shape}")
 
 conv2_out_shape = model.conv_output_shape(pool1_out_shape, kernel_size, filters_2)
+print(f"Conv2 output shape: {conv2_out_shape}")
 pool2_out_shape = model.maxpool_output_shape(conv2_out_shape, pool_size)
+print(f"Pool2 output shape: {pool2_out_shape}")
 
 flatten_out_shape = model.flatten_output_shape(pool2_out_shape)
+print(f"Flatten output shape: {flatten_out_shape}")
 
 dense1_out_shape = model.dense_output_shape(dense1_out_neurons)
+print(f"Dense1 output shape: {dense1_out_shape}")
 dense2_out_shape = model.dense_output_shape(dense2_out_neurons)
+print(f"Dense2 output shape: {dense2_out_shape}")
 
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
@@ -87,7 +94,7 @@ model.add(Activation(relu.relu, relu.relu_prime))
 model.add(MaxPool())
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=conv1_out_shape, kernel_size=kernel_size, filters=filters_2)) 
+model.add(Conv2D(input_shape=pool1_out_shape, kernel_size=kernel_size, filters=filters_2)) 
 model.add(Activation(relu.relu, relu.relu_prime))
 
 # **MaxPooling Layer**: Downsampling again
