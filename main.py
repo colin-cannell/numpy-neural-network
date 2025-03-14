@@ -7,6 +7,7 @@ from maxpool import MaxPool
 from dropout import Dropout
 from network import NeuralNetwork
 from activation import Activation
+from dropout import Dropout
 from activations import *
 
 train_images_path = "MNIST_ORG/train-images.idx3-ubyte"
@@ -35,9 +36,9 @@ train_data = load_mnist_images(train_images_path)
 train_labels = load_mnist_labels(train_labels_path)
 # print("Loaded MNIST dataset")
 
-size = 500
-train_data = train_data[:size].T
-train_labels = train_labels[:size].T
+size = 100
+train_data = train_data[:size]
+train_labels = train_labels[:size]
 
 # Normalize the images, puts the numbers on a scale of 0,255 in order to be better read by the network
 train_data = train_data / 255.0
@@ -58,32 +59,34 @@ softmax = Softmax()
 # Define the model architecture
 model = NeuralNetwork()
 
-filters_1 = 32
-filters_2 = 64
+filters_1 = 64
+filters_2 = 128
 
 kernel_size = 3
 pool_size = 2
 
-dense1_out_neurons = 128
+dense1_out_neurons = 512
 dense2_out_neurons = 10
 
+dropout_rate = 0.5
+
+batch_size = 10
+
 conv1_out_shape = model.conv_output_shape(input_shape, kernel_size, filters_1)
-print(f"Conv1 output shape: {conv1_out_shape}")
 pool1_out_shape = model.maxpool_output_shape(conv1_out_shape, pool_size)
-print(f"Pool1 output shape: {pool1_out_shape}")
-
 conv2_out_shape = model.conv_output_shape(pool1_out_shape, kernel_size, filters_2)
-print(f"Conv2 output shape: {conv2_out_shape}")
 pool2_out_shape = model.maxpool_output_shape(conv2_out_shape, pool_size)
-print(f"Pool2 output shape: {pool2_out_shape}")
-
 flatten_out_shape = model.flatten_output_shape(pool2_out_shape)
-print(f"Flatten output shape: {flatten_out_shape}")
-
 dense1_out_shape = model.dense_output_shape(dense1_out_neurons)
-print(f"Dense1 output shape: {dense1_out_shape}")
 dense2_out_shape = model.dense_output_shape(dense2_out_neurons)
-print(f"Dense2 output shape: {dense2_out_shape}")
+
+# print(f"Conv1 output shape: {conv1_out_shape}")
+# print(f"Pool1 output shape: {pool1_out_shape}")
+# print(f"Conv2 output shape: {conv2_out_shape}")
+# print(f"Pool2 output shape: {pool2_out_shape}")
+# print(f"Flatten output shape: {flatten_out_shape}")
+# print(f"Dense1 output shape: {dense1_out_shape}")
+# print(f"Dense2 output shape: {dense2_out_shape}")
 
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
@@ -102,16 +105,20 @@ model.add(MaxPool())
 
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
 model.add(Flatten())
+model.add(Dropout(dropout_rate))
+
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
 model.add(Dense(flatten_out_shape[0], dense1_out_neurons))
+model.add(Activation(relu.relu, relu.relu_prime))
+model.add(Dropout(dropout_rate))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
 model.add(Dense(dense1_out_neurons, dense2_out_neurons))
 model.add(Activation(softmax.forward, softmax.backward))
 
 # Train the model
-model.train(train_data, train_labels, epochs=10, learning_rate=0.01, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward)
+model.train(train_data, train_labels, epochs=10, learning_rate=0.01, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward, batch_size=batch_size)
 
 def save_weights(model, filename_prefix):
     """
@@ -124,3 +131,7 @@ def save_weights(model, filename_prefix):
         for j, weight in enumerate(weights):
             np.save(f"{filename_prefix}_layer_{i}_weight_{j}.npy", weight)  # Save each weight matrix
     print("Weights saved successfully!")
+
+
+# Save the model weights
+save_weights(model, "model_weights")

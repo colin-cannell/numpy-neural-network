@@ -29,4 +29,4 @@ class Activation(Layer):
         return output
     
     def backward(self, output_gradient, learning_rate=None):
-        return np.multiply(output_gradient, self.derivative(self.input))
+        return output_gradient * self.derivative(self.input)

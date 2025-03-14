@@ -7,7 +7,7 @@ class Relu:
         return np.maximum(0, x)
 
     def relu_prime(self, x):
-        return np.where(x > 0, 1, 0)
+        return x > 0
 
 
 class Sigmoid:
@@ -15,8 +15,8 @@ class Sigmoid:
         return 1 / (1 + np.exp(-x))
 
     def sigmoid_prime(self, x):
-        x = 1 / (1 + np.exp(-x))
-        return x * (1 - x)
+        s = self.sigmoid(x)
+        return s * (1 - s)
 
 
 class Tanh:
@@ -32,48 +32,36 @@ class Softmax(Layer):
         super().__init__()
 
     def forward(self, input):
-        self.input = input
-        exp_input = np.exp(input - np.max(input, axis=-1, keepdims=True))  # For numerical stability
-        self.output = exp_input / np.sum(exp_input, axis=-1, keepdims=True)
+        input_stable = input - np.max(input, axis=0, keepdims=True)
+        tmp = np.exp(input_stable)
+        self.output = tmp / np.sum(tmp)
         return self.output
 
     def backward(self, output_gradient, learning_rate=None):
-        batch_size = self.output.shape[0]  # Get the batch size
-        num_classes = self.output.shape[1]  # Number of classes
-        
-        # Initialize an empty list for the gradients
-        jacobian_list = []
-        
-        # For each sample in the batch
-        for i in range(batch_size):
-            # Compute the Jacobian matrix for the current sample (i-th example)
-            jacobian = np.diag(self.output[i]) - np.outer(self.output[i], self.output[i])
-            jacobian_list.append(jacobian)
-        
-        # Stack the Jacobians into a matrix of shape (batch_size, num_classes, num_classes)
-        jacobian_matrix = np.array(jacobian_list)
-        
-        # The gradient is the dot product of output_gradient and the Jacobian, for each sample
-        gradients = np.einsum('ij,ijk->ik', output_gradient, jacobian_matrix)
+        num_classes, num_neurons = output_gradient.shape
+        softmax_grid = np.zeros_like(self.output)
 
-        # Average the gradients over the batch
-        return gradients / batch_size
-    
-class CrossEntropyLoss(Layer):
+        for i in range(num_neurons):
+           s = self.output[:, i].reshape(-1, 1)
+           jacobian = np.diagflat(s) - np.dot(s, s.T)
+           softmax_grid[:, i] = np.dot(jacobian, output_gradient[:, i])
+
+        return softmax_grid
+
+class CrossEntropyLoss:
     def __init__(self):
         super().__init__()
+        self.epsilon = 1e-15
 
     def forward(self, y_true, y_pred):
-        # Clip values to avoid log(0) issues
-        self.y_true = y_true
-        self.y_pred = np.clip(y_pred, 1e-10, 1 - 1e-10)
-        loss = -np.sum(y_true * np.log(self.y_pred)) / y_true.shape[0]
-        return loss
+        y_true = y_true.reshape(-1, 1)
+        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+        return np.mean(-y_true * np.log(y_pred) - (1 - y_true) * np.log(1 - y_pred))
 
     def backward(self, y_true, y_pred):
-        # Gradient of cross-entropy loss with respect to y_pred
-        return (y_pred - y_true) / y_true.shape[0]
-
+        y_true = y_true.reshape(-1, 1)
+        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+        return ((1 - y_true) / (1 - y_pred) - y_true / y_pred) / np.size(y_true)
 
 class MeanSquaredErrorLoss(Layer):
     def __init__(self):
