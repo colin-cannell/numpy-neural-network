@@ -1,6 +1,5 @@
 import numpy as np
 from activations import *
-
 import matplotlib.pyplot as plt
 
 GRADIENT_THRESHOLD = 1000  # You can adjust this value
@@ -21,103 +20,57 @@ class NeuralNetwork:
         self.layers.append(layer)
     
     def forward(self, input):
-        """
-        Forward transition between layers through the network
-        @param input: input data
-        """
-        #with open('forward.txt', 'w') as f:
-        output = input
+        self.activations = []
+        self.inputs = [input]
         for layer in self.layers:
-            #f.write(f"Forward input to layer  {layer.__class__.__name__} : {output}\n")
-            # print(f"Forward input to layer  {layer.__class__.__name__} : {output.shape}")
-            output = layer.forward(output)
-            # print(f"Forward output from layer  {layer.__class__.__name__} : {output.shape}")
-            #f.write(f"Forward output from layer  {layer.__class__.__name__} : {output}\n")
-        #f.close()
+            input = layer.forward(input)
+            self.inputs.append(input)
+            self.activations.append(layer.activation)
                     
-        return output
+        return input
 
     def backward(self, output_gradient, learning_rate):
-        """
-        Backward pass through the network
-        @param output_gradient: gradient of the loss with respect to the output
-        @param learning_rate: learning rate
-        """
-        # with open('backward.txt', 'w') as f:
-        for layer in reversed(self.layers):
-            #f.write(f"Backward input to layer  {layer.__class__.__name__} : {output_gradient}\n")
-            # print(f"Backward input to layer  {layer.__class__.__name__} : {output_gradient.shape}")
+        for i in reversed(range(len(self.layers))):
+            layer = self.layers[i]
             output_gradient = layer.backward(output_gradient, learning_rate)
-            # print(f"Backward output from layer  {layer.__class__.__name__} : {output_gradient.shape}")
-            #f.write(f"Backward output from layer  {layer.__class__.__name__} : {output_gradient}\n")
-        #f.close()
-        
-        return output_gradient
 
-    def train(self, x, y, epochs, learning_rate, loss_function=CrossEntropyLoss().forward, loss_derivative=CrossEntropyLoss().backward, batch_size=10):
-        """
-        Trains the model using the given data
-        @param x: input data
-        @param y: validation data
-        @param epochs: number of epochs
-        @param learning_rate: learning rate
-        """
-        loss_history = []  # Store loss values for tracking trends
-        total_images = len(x)
-        total_correct = 0
+
+    def train(self, x, y, epochs, learning_rate, batch_size, loss, optimizer):
+        num_samples = x.shape[0]
 
         for epoch in range(epochs):
-            print(f"\nEpoch {epoch+1}/{epochs}")
-            
-            epoch_loss = 0
-            images_num = 0
-            correct = 0
-            history = []
+            epochs_loss = 0
+            correct_pred = 0
+            for i in range(0, num_samples, batch_size):
+                x_batch = x[i:i+batch_size]
+                y_batch = y[i:i+batch_size]
 
+                # Forward pass
+                output = self.forward(x_batch)
 
-            for i, (xi, yi) in enumerate(zip(x, y), 1):
+                # Calculate loss
+                loss_value = loss.forward(output, y_batch)
+                epochs_loss += loss_value
 
-                output = self.forward(xi)
-
-                if np.max(output) > GRADIENT_THRESHOLD:
-                    print("Gradient explosion detected!")
-                    break
-
-                sample_loss = loss_function(yi, output)
-                epoch_loss += sample_loss
-
-                predict = f"P.{int(np.argmax(output))}"
-                label = f"L{int(np.argmax(yi))}"
-
-                history.append((predict, label))
-                # Calculate accuracy
-                if np.argmax(output) == np.argmax(yi):
-                    correct += 1
-
-                images_num += 1
-                # Backpropagation
-                output_gradient = loss_derivative(yi, output)
+                # Backward pass
+                output_gradient = loss.backward(output, y_batch)
                 self.backward(output_gradient, learning_rate)
 
-                # Print intermediate results every 10 images
-                if images_num % batch_size == 0 or images_num == total_images:
-                    accuracy = correct / images_num
-                    print(f"🖼️ Processed {images_num}/{total_images} images - Loss: {epoch_loss/images_num:.4f} - Batch Accuracy: {accuracy:.4f}")
-                    print(f"Batch history: {history}")
-                    total_correct += correct
-                    correct = 0  # Reset correct count for the next batch
-                    history = []
+                optimizer.update(self.layers)
 
+                predictions = np.argmax(output, axis=1)
+                correct_pred += np.sum(predictions == np.argmax(y_batch, axis=1))
 
-            # Store loss history
-            epoch_loss /= total_images
-            loss_history.append(epoch_loss)
             
-            # Print final epoch loss and accuracy
-            final_accuracy = total_correct / total_images
-            print(f"Epoch {epoch+1}/{epochs} - Final Loss: {epoch_loss:.4f} - Final Accuracy: {final_accuracy:.4f}")
+            epoch_accuracy = correct_pred / num_samples
+            self.visualizer.update(epoch + 1, epochs_loss / num_samples, epoch_accuracy)
+            print(f'Epoch {epoch+1}/{epochs}, Loss: {epochs_loss/num_samples}, Accuracy: {epoch_accuracy}')
+        self.visualizer.save()
+        self.visualizer.show()
 
-        return loss_history  # Return loss history for analysis
+        def predict(self, x):
+            output = self.forward(x)
+            return np.argmax(output, axis=1)
     
     def conv_output_shape(self, input_shape, kernel_size, filters, stride=1, padding=0):
         """
@@ -127,12 +80,12 @@ class NeuralNetwork:
         @param filters: number of filters
         @return: output shape
         """
-        H, W, D = input_shape
+        B, H, W, C = input_shape
         k_H = kernel_size
         k_W = kernel_size
         H_out = (H - k_H + 2 * padding) // stride + 1
         W_out = (W - k_W + 2 * padding) // stride + 1
-        return (H_out, W_out, filters)
+        return (B, H_out, W_out, filters)
 
     def maxpool_output_shape(self, input_shape, pool_size):
         """
@@ -141,33 +94,74 @@ class NeuralNetwork:
         @param pool_size: pool size
         @return: output shape
         """
-        H, W, D = input_shape
+        B, H, W, C = input_shape
         H_out = H // pool_size
         W_out = W // pool_size
-        return (H_out, W_out, D)
+        return (B, H_out, W_out, C)
 
-    def flatten_output_shape(self, input_shape):
-        """
-        Calculate the output shape of a flatten layer
-        @param input_shape: input shape
-        @return: output shape
-        """
-        H, W, D = input_shape
-        return (H * W * D, )
-
-    def dense_output_shape(self, units):
-        """
-        Calculate the output shape of a dense layer
-        @param input_shape: input shape
-        @param units: number of units
-        @return: output shape
-        """
-        return (units, )
+    def flatten_output_shape(self, input):
+        # flatteen of the input shape
+        B = input[0]
+        flat = 1
+        for i in input[1:]:
+            flat *= i
+        return (B, flat)
     
-    def dense_input_shape(self, input_shape):
+    def dense_input_shape(self, batch_size, input_dim):
         """
         Calculate the input shape of a dense layer
         @param input_shape: input shape
         @return: output shape
         """
-        return (input_shape, )
+        return (batch_size, input_dim)
+
+    def dense_output_shape(self, batch_size, output_dim):
+
+        """
+        Calculate the output shape of a dense layer
+        @param input_shape: input shape
+        @return: output shape
+        """
+        return (batch_size, output_dim)
+    
+
+class TrainingVisualizer:
+    def __init__(self):
+        self.epochs = []
+        self.losses = []
+        self.accuracies = []
+        
+        plt.ion()  # Enable interactive mode
+        self.fig, self.ax = plt.subplots(1, 2, figsize=(12, 5))
+    
+    def update(self, epoch, loss, accuracy):
+        """Update the visualization with new data."""
+        self.epochs.append(epoch)
+        self.losses.append(loss)
+        self.accuracies.append(accuracy)
+        
+        self.ax[0].cla()
+        self.ax[0].plot(self.epochs, self.losses, 'r-', label='Loss')
+        self.ax[0].set_title('Training Loss')
+        self.ax[0].set_xlabel('Epoch')
+        self.ax[0].set_ylabel('Loss')
+        self.ax[0].legend()
+        
+        self.ax[1].cla()
+        self.ax[1].plot(self.epochs, self.accuracies, 'b-', label='Accuracy')
+        self.ax[1].set_title('Training Accuracy')
+        self.ax[1].set_xlabel('Epoch')
+        self.ax[1].set_ylabel('Accuracy')
+        self.ax[1].legend()
+        
+        plt.pause(0.1)  # Pause to update the figure
+    
+    def save(self, filename='training_progress.png'):
+        """Save the plot to a file."""
+        self.fig.savefig(filename)
+        print(f"Plot saved as {filename}")
+    
+    def show(self):
+        """Keep the plot open after training ends."""
+        plt.ioff()
+        plt.show()

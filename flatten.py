@@ -1,5 +1,6 @@
 import numpy as np
 from layer import Layer
+from visualize import flatten
 
 """
     Flatten layer flattens the input image into a 1D array while preserving batch size.
@@ -12,8 +13,12 @@ class Flatten(Layer):
     """
     def forward(self, input):
         self.input_shape = input.shape 
-        self.output = input.flatten()
-        return self.output
+        batch_size = input.shape[0]
+        flattened = input.reshape(batch_size, -1)  # Flatten all but the batch dimension
+
+        flatten.flattened_distribution(input, flattened, layer_name="Flatten Layer")
+
+        return flattened
 
     """
     Backward pass of the Flatten layer
@@ -22,5 +27,5 @@ class Flatten(Layer):
     @return: gradient of the input
     """
     def backward(self, output_gradient, learning_rate):     
-        output_gradient = output_gradient.reshape(self.input_shape)
-        return output_gradient
+        input_gradient = output_gradient.reshape(self.input_shape)
+        return input_gradient

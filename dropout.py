@@ -9,14 +9,15 @@ class Dropout(Layer):
     def __init__(self, rate=0.5, training=True):
         if not 0 <= rate <= 1:
             raise ValueError("Dropout rate must be between 0 and 1")
+        
         self.rate = rate
-        self.training = training  # Flag to indicate if the layer is in training mode
         self.mask = None
     
-    def forward(self, input):
-        if self.training:
-            self.mask = np.random.binomial(1, 1 - self.rate, size=input.shape)
-            output = input * self.mask / (1 - self.rate)
+    def forward(self, input, training=True):
+        if training:
+            self.mask = (np.random.rand(*input.shape) < (1 - self.rate))
+            output = input * self.mask
+            self.dropout_effect(self.input, output, "Dropout Layer Forward Pass")
             return output
         else:
             return input
@@ -25,11 +26,6 @@ class Dropout(Layer):
     # i think it is because of the way the mask is being applied
     # might have to rethink how backpropogation works in this layer
     def backward(self, output_gradient, learning_rate):
-        if self.training:
-            self.mask = self.mask.reshape(output_gradient.shape)
-            output = output_gradient * self.mask / (1 - self.rate)
-            return output
-
-        else:
-            return output_gradient
+        input_gradient = output_gradient * self.mask
+        return input_gradient
 

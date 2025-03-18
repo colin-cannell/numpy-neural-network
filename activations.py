@@ -1,33 +1,47 @@
 import numpy as np
 from layer import Layer
-from activation import Activation
 
-class Relu:
-    def relu(self, x):
+class Relu(Layer):
+    def forward(self, x):
         return np.maximum(0, x)
 
-    def relu_prime(self, x):
+    def backward(self, x, learning_rate=None):
         return x > 0
+    
+class LeakyRelu(Layer):
+    def __init__(self, alpha=0.01):
+        self.alpha = alpha
 
+    def forward(self, x):
+        return np.where(x > 0, x, x * self.alpha)
+    
+    def backward(self, x, learning_rate=None):
+        return np.where(x > 0, 1, self.alpha)
 
-class Sigmoid:
-    def sigmoid(self, x):
+class Sigmoid(Layer):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x):
         return 1 / (1 + np.exp(-x))
 
-    def sigmoid_prime(self, x):
+    def backward(self, x, learning_rate=None):
         s = self.sigmoid(x)
         return s * (1 - s)
 
 
-class Tanh:
-    def tanh(self, x):
+class tanh:
+    def __init__(self):
+        super().__init__()
+
+    def fowrard(self, x):
         return np.tanh(x)
 
-    def tanh_prime(self, x):
+    def backward(self, x, learning_rate=None):
         return 1 - np.tanh(x) ** 2
 
 
-class Softmax(Layer):
+class Softmax:
     def __init__(self):
         super().__init__()
 
@@ -38,40 +52,11 @@ class Softmax(Layer):
         return self.output
 
     def backward(self, output_gradient, learning_rate=None):
-        num_classes, num_neurons = output_gradient.shape
-        softmax_grid = np.zeros_like(self.output)
+        output_neurons = output_gradient.shape[0]
 
-        for i in range(num_neurons):
-           s = self.output[:, i].reshape(-1, 1)
-           jacobian = np.diagflat(s) - np.dot(s, s.T)
-           softmax_grid[:, i] = np.dot(jacobian, output_gradient[:, i])
+        s = self.output.reshape(output_neurons, 1)
+        jacobian = np.diagflat(s) - np.dot(s, s.T)
+        output = np.dot(jacobian, output_gradient)
 
-        return softmax_grid
+        return output
 
-class CrossEntropyLoss:
-    def __init__(self):
-        super().__init__()
-        self.epsilon = 1e-15
-
-    def forward(self, y_true, y_pred):
-        y_true = y_true.reshape(-1, 1)
-        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
-        return np.mean(-y_true * np.log(y_pred) - (1 - y_true) * np.log(1 - y_pred))
-
-    def backward(self, y_true, y_pred):
-        y_true = y_true.reshape(-1, 1)
-        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
-        return ((1 - y_true) / (1 - y_pred) - y_true / y_pred) / np.size(y_true)
-
-class MeanSquaredErrorLoss(Layer):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, y_true, y_pred):
-        self.y_true = y_true
-        self.y_pred = y_pred
-        loss = np.mean((y_true - y_pred) ** 2)
-        return loss
-
-    def backward(self, y_true, y_pred):
-        return 2 * (y_pred - y_true) / y_true.shape[0]
