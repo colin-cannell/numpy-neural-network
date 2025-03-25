@@ -13,10 +13,9 @@ class Flatten(Layer):
     """
     def forward(self, input):
         self.input_shape = input.shape 
-        batch_size = input.shape[0]
-        flattened = input.reshape(batch_size, -1)  # Flatten all but the batch dimension
+        flattened = input.flatten()
 
-        flatten.flattened_distribution(input, flattened, layer_name="Flatten Layer")
+        # flatten.flattened_distribution(input, flattened, layer_name="Flatten Layer")
 
         return flattened
 

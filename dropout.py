@@ -1,5 +1,6 @@
 import numpy as np
 from layer import Layer
+from visualize import dropout
 
 class Dropout(Layer):
     """
@@ -17,15 +18,23 @@ class Dropout(Layer):
         if training:
             self.mask = (np.random.rand(*input.shape) < (1 - self.rate))
             output = input * self.mask
-            self.dropout_effect(self.input, output, "Dropout Layer Forward Pass")
+            # dropout.dropout_effect(input, output, "Dropout Layer Forward Pass")
             return output
         else:
             return input
     
-    # output from the dropout layer is currently (3200,3200) when it should just be 3200, 1
-    # i think it is because of the way the mask is being applied
-    # might have to rethink how backpropogation works in this layer
     def backward(self, output_gradient, learning_rate):
         input_gradient = output_gradient * self.mask
         return input_gradient
+    
+
+"""
+value encountered in subtract
+input_stable = input - np.max(input, axis=0, keepdims=True)
+
+/Users/colincannell/NumpyNeuralNetwork/losses.py:15: RuntimeWarning: invalid value encountered in cast
+  correct_class_prob = np.log(y_pred[np.arange(y_true.shape[0]), y_true.flatten().astype(int)])
+
+
+"""
 

@@ -1,6 +1,11 @@
 import numpy as np
 from layer import Layer
 
+def safe_log(x):
+    # Replace any values that are 0 or negative with a small positive value to prevent log(0) or log(negative)
+    x = np.clip(x, 1e-10, None)  # Clip to prevent log(0) or log(negative values)
+    return np.log(x)
+
 class CategoricalCrossEntropyLoss:
     def __init__(self):
         self.epsilon = 1e-15
@@ -8,7 +13,11 @@ class CategoricalCrossEntropyLoss:
     def forward(self, y_true, y_pred):
         y_pred = y_pred.T
         y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
-        correct_class_prob = np.log(y_pred[np.arange(y_true.shape[1]), y_true.flatten().astype(int)])
+
+        y_true = y_true.reshape(-1, 1)  # Shape becomes (10, 1)
+        y_pred = y_pred.reshape(-1, 1)  # Shape becomes (10, 1)
+
+        correct_class_prob = safe_log(y_pred[np.arange(y_true.shape[0]), y_true.flatten().astype(int)])
         output = -np.mean(correct_class_prob)
         return output
 
@@ -19,7 +28,7 @@ class CategoricalCrossEntropyLoss:
         
         # Since we have 10 samples (batch size = 1), we compute the gradient for each class
         for i in range(y_true.shape[0]):  # Loop through each class
-            grad[i, 0] = -y_true[i] / y_pred[i, 0]  # Update gradient for the correct class
+            grad[i] = -y_true[i] / y_pred[i]  # Update gradient for the correct class
 
         return grad  # Gradient with respect to y_pred
 

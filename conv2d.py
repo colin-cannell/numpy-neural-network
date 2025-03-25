@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from layer import Layer
 from activations import Relu
 from visualize import conv
@@ -12,7 +13,7 @@ class Conv2D(Layer):
         self.stride = stride
         self.padding = padding
 
-        self.batch_size, self.input_H, self.input_W, self.input_C = input_shape
+        self.input_H, self.input_W, self.input_C = input_shape
         self.input_shape = input_shape
 
          # The kernel shape is important because it defines the dimensions of the filters applied to the input image, ensuring that:
@@ -23,12 +24,10 @@ class Conv2D(Layer):
                             self.input_C,
                             self.filters)
 
-
+        h_out = math.ceil((self.input_H - self.kernel_size + 2 * padding) / stride + 1)
+        w_out = math.ceil((self.input_W - self.kernel_size + 2 * padding) / stride + 1)
         # output shape is calculated by subtracting the kernel size from the input size and adding 1
-        self.feature_map_shape = (self.batch_size,
-                                 (self.input_H - self.kernel_size + 2 * padding) // stride + 1,
-                                 (self.input_W - self.kernel_size + 2 * padding) // stride + 1,
-                                 filters)
+        self.feature_map_shape = (h_out, w_out, filters)
         
         # returns a sample (or samples) from the “standard normal” distribution.
         # kernels is a 4D array of shape (filters, input depth, kernerl hight, kernel width)
@@ -36,7 +35,6 @@ class Conv2D(Layer):
 
         # he initialization of kernels for relu activations
         self.kernels = np.random.randn(self.kernel_size, self.kernel_size, self.input_C, self.filters)
-        print(f"Kernel shape: {self.kernels.shape}")
         self.bias = np.zeros((self.filters, 1))
 
         self.activation = activation
@@ -46,49 +44,56 @@ class Conv2D(Layer):
         
         feature_map = np.zeros(self.feature_map_shape)
 
-        for y in range(self.feature_map_shape[1]):
-            for x in range(self.feature_map_shape[2]):
+        for y in range(self.feature_map_shape[0]):
+            for x in range(self.feature_map_shape[1]):
                 x_start = x * self.stride
                 y_start = y * self.stride
                 x_end = x_start + self.kernel_size
                 y_end = y_start + self.kernel_size
-                region = input[:, y_start:y_end, x_start:x_end, :]
-                for f in range(self.feature_map_shape[3]):
-                    feature_map[:, y, x, f] = np.sum(region * self.kernels[:, :, :, f]) + self.bias[f]
+                region = input[y_start:y_end, x_start:x_end]
+                for f in range(self.feature_map_shape[2]):
+                    feature_map[y, x, f] = np.sum(region * self.kernels[:, :, :, f]) + self.bias[f]
 
         feature_map = self.activation.forward(feature_map)
 
-        conv.conv_feature_maps(feature_map, layer_name="Conv Layer")
-        conv.conv_kernels(self.kernels, layer_name="Conv Layer")
+        # conv.conv_feature_maps(feature_map, layer_name="Conv Layer")
+        # conv.conv_kernels(self.kernels, layer_name="Conv Layer")
 
         return feature_map
     
     def backward(self, output_gradient, learning_rate):
         output_gradient = self.activation.backward(output_gradient)
 
-        batch_size, output_height, output_width, num_filters = output_gradient.shape
-        
+        output_height, output_width, num_filters = output_gradient.shape
+
         # Initialize gradients with respect to the filters, input, and biases
-        kernel_gradient = np.zeros_like(self.filters)
-        input_gradient = np.zeros_like(self.input)
-        bias_gradient = np.zeros_like(self.biases)
+        kernel_gradient = np.zeros_like(self.kernels, dtype=np.float64)
+        input_gradient = np.zeros_like(self.input, dtype=np.float64)
+        bias_gradient = np.zeros_like(self.bias, dtype=np.float64)
 
         # Compute gradients with respect to the filters and biases
-        for i in range(output_height):
-            for j in range(output_width):
+        for y in range(output_height):
+            for x in range(output_width):
                 # Extract the input slice for each position of the filter
-                slice = self.input[:, i * self.stride:i * self.stride + self.kernel_size, j * self.stride:j * self.stride + self.kernel_size, :]
+                slice = self.input[y * self.stride:y * self.stride + self.kernel_size, 
+                                   x * self.stride:x * self.stride + self.kernel_size, :]
 
                 # Calculate the gradient of the loss with respect to the filters
-                for k in range(self.num_filters):
-                    kernel_gradient[k] += np.sum(slice * output_gradient[:, i, j, k][:, None, None, None], axis=0)
-                    input_gradient[:, i * self.stride:i * self.stride + self.filter_height, j * self.stride:j * self.stride + self.filter_width, :] += self.filters[k] * output_gradient[:, i, j, k][:, None, None, None]
+                for c in range(num_filters):
+                    kernel_gradient[:, :, :, c] += slice * output_gradient[y, x, c]
+                    input_gradient[y * self.stride:y * self.stride + self.kernel_size, 
+                                   x * self.stride:x * self.stride + self.kernel_size, :] += self.kernels[:, :, :, c] * output_gradient[y, x, c]
+                    bias_gradient[c] += output_gradient[y, x, c] 
 
+            
 
-                # Calculate the gradient of the loss with respect to the biases
-                bias_gradient += np.sum(output_gradient[:, i, j, :], axis=0)[:, None]
+        self.bias_gradient = bias_gradient
+        self.kernel_gradient = kernel_gradient
 
-        conv.conv_gradients(self, layer_name="Conv Layer")
+        self.kernels -= learning_rate * kernel_gradient
+        self.bias -= learning_rate * bias_gradient.reshape(self.bias.shape)
+
+        # conv.conv_gradients(self, layer_name="Conv Layer")
 
         return input_gradient
     

@@ -27,54 +27,49 @@ def visualize_batch(images, labels, batch_size):
         ax.set_title(f"Label: {np.argmax(labels[i])}")  # Convert one-hot to label
 
     plt.show()
-
-def load_mnist_images(filename, batch_size=1):
+def load_mnist_images(filename):
+ 
     with open(filename, 'rb') as f:
-        magic, num_images, rows, cols = np.frombuffer(f.read(16), dtype='>i4', count=4)
-        images = np.frombuffer(f.read(), dtype='>u1').reshape(num_images, rows, cols, 1)
+        # Read the magic number and number of images
+        magic, num_images, rows, cols = np.frombuffer(f.read(16), dtype='>i4')
+        # Read the image data
+        images = np.frombuffer(f.read(), dtype='>u1').reshape(num_images, rows, cols)
+    return images
+ 
 
-    # If batch size is greater than 1, return batches
-    for i in range(0, num_images, batch_size):
-        yield images[i:i+batch_size]
-
-def load_mnist_labels(filename, batch_size=1):
+ 
+def load_mnist_labels(filename):
     with open(filename, 'rb') as f:
+        # Read the magic number and number of labels
         magic, num_labels = np.frombuffer(f.read(8), dtype='>i4')
+        # Read the label data
         labels = np.frombuffer(f.read(), dtype='>u1')
+    return labels
 
-    # If batch size is greater than 1, return batches
-    for i in range(0, num_labels, batch_size):
-        yield labels[i:i+batch_size]
-
-batch_size = 10
-train_data = load_mnist_images(train_images_path, batch_size)
-train_labels = load_mnist_labels(train_labels_path, batch_size)
-
-# Convert the generator to a numpy array
-train_data = np.array(list(train_data))
-train_labels = np.array(list(train_labels))
+# Load the MNIST dataset
+train_data = load_mnist_images(train_images_path)
+train_labels = load_mnist_labels(train_labels_path)
 
 # print(f"train_data shape: {train_data.shape}")
 # print(f"train_labels shape: {train_labels.shape}")
 
-size = 10
+# Normalize the images
+train_images = train_data / 255.0
 
-train_data = train_data[:size]
-train_labels = train_labels[:size]
-# print(f"train_data shape: {train_data.shape}")
-# print(f"train_labels shape: {train_labels.shape}")
+# Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
+train_images = train_images.reshape(60000, 28, 28, 1)
+T, H, W, C = train_images.shape
+input_shape = (H, W, C)
 
-# Normalize the images, puts the numbers on a scale of 0,255 in order to be better read by the network
-train_data = train_data / 255.0
-T, B, H, W, C  = train_data.shape
-input_shape = (B, H, W, C)
-# create a 2d array with 1s on the diagonal and 0s elsewhere    
 train_labels = np.eye(10)[train_labels]
+train_labels = train_labels.reshape(-1, 10)
 
 # Define the activation functions in use
 conv_func = LeakyRelu()
 dense1_func = LeakyRelu()
 dense2_func = Softmax()
+adam = Adam()
+
 
 loss_funcion = CategoricalCrossEntropyLoss()
 
@@ -96,27 +91,26 @@ pool1_out_shape = model.maxpool_output_shape(conv1_out_shape, pool_size)
 conv2_out_shape = model.conv_output_shape(pool1_out_shape, kernel_size, filters_2)
 pool2_out_shape = model.maxpool_output_shape(conv2_out_shape, pool_size)
 flatten_out_shape = model.flatten_output_shape(pool2_out_shape)
-dense1_out_shape = model.dense_output_shape(flatten_out_shape[0], dense1_out_neurons)
-dense2_out_shape = model.dense_output_shape(batch_size, num_classes)
+dense1_out_shape = model.dense_output_shape(dense1_out_neurons)
+dense2_out_shape = model.dense_output_shape(num_classes)
 
-print(f"Conv1 output shape: {conv1_out_shape}")
-print(f"Pool1 output shape: {pool1_out_shape}")
-print(f"Conv2 output shape: {conv2_out_shape}")
-print(f"Pool2 output shape: {pool2_out_shape}")
-print(f"Flatten output shape: {flatten_out_shape}")
-print(f"Dense1 output shape: {dense1_out_shape}")
-print(f"Dense2 output shape: {dense2_out_shape}")
+# print(f"Conv1 output shape: {conv1_out_shape}")
+# print(f"Pool1 output shape: {pool1_out_shape}")
+# print(f"Conv2 output shape: {conv2_out_shape}")
+# print(f"Pool2 output shape: {pool2_out_shape}")
+# print(f"Flatten output shape: {flatten_out_shape}")
+# print(f"Dense1 output shape: {dense1_out_shape}")
+# print(f"Dense2 output shape: {dense2_out_shape}")
 
 dropout_rate = 0.5
 
 batch_size = 10
 
 test_data = train_data[:batch_size]
+test_data = test_data.reshape(batch_size, H, W, C)
+
 test_labels = train_labels[:batch_size]
-
-# Call the function to visualize
-# visualize_batch(test_data, test_labels, batch_size)
-
+test_labels = test_labels.reshape(batch_size, num_classes)
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func))
@@ -137,7 +131,7 @@ model.add(Flatten())
 model.add(Dropout(dropout_rate))
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(flatten_out_shape[0], dense1_out_neurons, activation=dense1_func))
+model.add(Dense(flatten_out_shape, dense1_out_neurons, activation=dense1_func))
 
 # **Dropout Layer**: Regularization to prevent overfitting
 model.add(Dropout(dropout_rate))
@@ -146,4 +140,4 @@ model.add(Dropout(dropout_rate))
 model.add(Dense(dense1_out_neurons, num_classes, activation=dense2_func))
 
 # Train the model
-model.train(train_data, train_labels, epochs=10, learning_rate=0.01, batch_size=batch_size, loss=loss_funcion, optimizer=Adam)
+model.train(train_data, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)

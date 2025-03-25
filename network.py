@@ -1,8 +1,8 @@
 import numpy as np
+import math
 from activations import *
 import matplotlib.pyplot as plt
 
-GRADIENT_THRESHOLD = 1000  # You can adjust this value
 """
 Neural Network class where layers can be added 
 forward advancement between layers is handled here.
@@ -22,11 +22,20 @@ class NeuralNetwork:
     def forward(self, input):
         self.activations = []
         self.inputs = [input]
+
+        # print("input shape:", input.shape)  
+
         for layer in self.layers:
-            input = layer.forward(input)
-            self.inputs.append(input)
-            self.activations.append(layer.activation)
-                    
+            input = layer.forward(input)  # Apply layer operation
+            # print("output shape for layer:", input.shape, "layer:", layer.__class__.__name__)
+
+            self.inputs.append(input)  # Store the output before activation
+
+            # Apply activation function if the layer has one
+            if hasattr(layer, "activation") and layer.activation is not None:
+                input = layer.activation.forward(input)
+                self.activations.append(layer.activation)
+
         return input
 
     def backward(self, output_gradient, learning_rate):
@@ -34,32 +43,39 @@ class NeuralNetwork:
             layer = self.layers[i]
             output_gradient = layer.backward(output_gradient, learning_rate)
 
+    def gradient_clipping(self, gradients, threshold=1.0):
+        norm = np.linalg.norm(gradients)
+        if norm > threshold:
+            gradients = gradients * (threshold / norm)
+        return gradients
 
-    def train(self, x, y, epochs, learning_rate, batch_size, loss, optimizer):
+
+    def train(self, x, y, epochs, learning_rate, loss, optimizer):
         num_samples = x.shape[0]
 
         for epoch in range(epochs):
             epochs_loss = 0
             correct_pred = 0
-            for i in range(0, num_samples, batch_size):
-                x_batch = x[i:i+batch_size]
-                y_batch = y[i:i+batch_size]
+            for xi, yi in zip(x, y):
+                xi = np.expand_dims(xi, axis=-1)
 
-                # Forward pass
-                output = self.forward(x_batch)
+                output = self.forward(xi)
 
                 # Calculate loss
-                loss_value = loss.forward(output, y_batch)
+                loss_value = loss.forward(output, yi)
                 epochs_loss += loss_value
 
                 # Backward pass
-                output_gradient = loss.backward(output, y_batch)
+                output_gradient = loss.backward(output, yi)
+                output_gradient = self.gradient_clipping(output_gradient)
                 self.backward(output_gradient, learning_rate)
 
-                optimizer.update(self.layers)
+                # for layer in self.layers:
+                #     if hasattr(layer, "kernels") and hasattr(layer, "bias"):
+                #         optimizer.update([layer.kernels, layer.bias], [layer.kernel_gradient, layer.bias_gradient])
 
-                predictions = np.argmax(output, axis=1)
-                correct_pred += np.sum(predictions == np.argmax(y_batch, axis=1))
+                prediction = np.argmax(output)
+                correct_pred += np.sum(prediction == np.argmax(yi))
 
             
             epoch_accuracy = correct_pred / num_samples
@@ -68,61 +84,29 @@ class NeuralNetwork:
         self.visualizer.save()
         self.visualizer.show()
 
-        def predict(self, x):
-            output = self.forward(x)
-            return np.argmax(output, axis=1)
+    def predict(self, x):
+        output = self.forward(x)
+        return np.argmax(output)
     
     def conv_output_shape(self, input_shape, kernel_size, filters, stride=1, padding=0):
-        """
-        Calculate the output shape of a convolutional layer
-        @param input_shape: input shape
-        @param kernel_size: kernel size
-        @param filters: number of filters
-        @return: output shape
-        """
-        B, H, W, C = input_shape
-        k_H = kernel_size
-        k_W = kernel_size
-        H_out = (H - k_H + 2 * padding) // stride + 1
-        W_out = (W - k_W + 2 * padding) // stride + 1
-        return (B, H_out, W_out, filters)
+        H, W, C = input_shape
+        k_H, k_W = kernel_size, kernel_size  # If square kernel, otherwise pass as tuple
+        H_out = math.ceil((H - k_H + 2 * padding) / stride + 1)
+        W_out = math.ceil((W - k_W + 2 * padding) / stride + 1)
+        return (H_out, W_out, filters)  # Filters represent output channels
 
     def maxpool_output_shape(self, input_shape, pool_size):
-        """
-        Calculate the output shape of a maxpooling layer
-        @param input_shape: input shape
-        @param pool_size: pool size
-        @return: output shape
-        """
-        B, H, W, C = input_shape
-        H_out = H // pool_size
-        W_out = W // pool_size
-        return (B, H_out, W_out, C)
+        H, W, C = input_shape
+        H_out = math.ceil(H / pool_size)  # Ensure floor division
+        W_out = math.ceil(W / pool_size)
+        return (H_out, W_out, C)  # Channels remain the same
 
     def flatten_output_shape(self, input):
         # flatteen of the input shape
-        B = input[0]
-        flat = 1
-        for i in input[1:]:
-            flat *= i
-        return (B, flat)
+        return input[0] * input[1] * input[2]
     
-    def dense_input_shape(self, batch_size, input_dim):
-        """
-        Calculate the input shape of a dense layer
-        @param input_shape: input shape
-        @return: output shape
-        """
-        return (batch_size, input_dim)
-
-    def dense_output_shape(self, batch_size, output_dim):
-
-        """
-        Calculate the output shape of a dense layer
-        @param input_shape: input shape
-        @return: output shape
-        """
-        return (batch_size, output_dim)
+    def dense_output_shape(self, output_dim):
+        return output_dim  # Return only the number of output neurons
     
 
 class TrainingVisualizer:

@@ -27,7 +27,7 @@ class Dense(Layer):
         z = np.dot(input, self.weights) + self.bias
         self.output = self.activation.forward(z)
 
-        self.dense_neuron_activations(self.output, "Dense Layer Forward Pass")
+        # dense.dense_neuron_activations(self.output, "Dense Layer Forward Pass")
         
         return self.output
         
@@ -35,14 +35,16 @@ class Dense(Layer):
         activation_gradient = self.activation.backward(self.output)
         dL_dz = output_gradient * activation_gradient
 
-        dL_dw = np.dot(self.input.T, dL_dz)
+
+        dL_dw = self.input.reshape(-1, 1) * dL_dz
+
         dL_db = np.sum(dL_dz, axis=0)
 
         self.weights -= learning_rate * dL_dw
         self.bias -= learning_rate * dL_db
 
-        self.dense_weight_distribution(self.weights, "Dense Layer Weight Distribution")
-        self.dense_gradient_flow(self, "Dense Layer Gradient Flow")
+        # dense.dense_weight_distribution(self.weights, "Dense Layer Weight Distribution")
+        # dense.dense_gradient_flow(self, "Dense Layer Gradient Flow")
 
         input_gradient = np.dot(dL_dz, self.weights.T)
         return input_gradient

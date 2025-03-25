@@ -48,7 +48,7 @@ class Softmax:
     def forward(self, input):
         input_stable = input - np.max(input, axis=0, keepdims=True)
         tmp = np.exp(input_stable)
-        self.output = tmp / np.sum(tmp)
+        self.output = tmp / np.sum(tmp, axis=0, keepdims=True)
         return self.output
 
     def backward(self, output_gradient, learning_rate=None):
