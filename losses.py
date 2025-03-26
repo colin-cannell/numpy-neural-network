@@ -10,27 +10,29 @@ class CategoricalCrossEntropyLoss:
     def __init__(self):
         self.epsilon = 1e-15
 
-    def forward(self, y_true, y_pred):
-        y_pred = y_pred.T
-        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+    def forward(self, y_pred, y_true):
+        # Ensure y_pred is in the right shape
+        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)  # Clip to prevent log(0)
 
-        y_true = y_true.reshape(-1, 1)  # Shape becomes (10, 1)
-        y_pred = y_pred.reshape(-1, 1)  # Shape becomes (10, 1)
+        # Assuming y_true is a one-hot encoded vector (or batch)
+        # Correct class probabilities are selected using y_true as index
+        correct_class_prob = np.sum(y_true * safe_log(y_pred), axis=0)
 
-        correct_class_prob = safe_log(y_pred[np.arange(y_true.shape[0]), y_true.flatten().astype(int)])
+        # Calculate the loss (Mean Cross-Entropy Loss)
         output = -np.mean(correct_class_prob)
         return output
 
-    def backward(self, y_true, y_pred):
-        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)  # Prevent log(0)
-        
-        grad = np.zeros_like(y_pred)  # Initialize gradient as zero
-        
-        # Since we have 10 samples (batch size = 1), we compute the gradient for each class
-        for i in range(y_true.shape[0]):  # Loop through each class
-            grad[i] = -y_true[i] / y_pred[i]  # Update gradient for the correct class
+    def backward(self, y_pred, y_true):
+        y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)  # Clip to prevent log(0)
 
+        # Compute the gradient for each class
+        grad = np.zeros_like(y_pred)  # Initialize gradient
+
+        # Backpropagation: Gradient calculation for each sample
+        grad = -y_true / y_pred  # For one-hot encoded labels, we divide by y_pred for the correct class
+        
         return grad  # Gradient with respect to y_pred
+      
 
 
 

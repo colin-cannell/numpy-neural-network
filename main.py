@@ -10,6 +10,7 @@ from dropout import Dropout
 from activations import *
 from losses import *
 from optimizers import Adam
+from visualize import ContinuousVisualizer as cv
 
 
 train_images_path = "MNIST_ORG/train-images.idx3-ubyte"
@@ -77,8 +78,10 @@ adam = Adam()
 
 loss_funcion = CategoricalCrossEntropyLoss()
 
+cv = cv()
+
 # Define the model architecture
-model = NeuralNetwork()
+model = NeuralNetwork(visualize=cv)
 
 num_classes = 10
 
@@ -117,16 +120,16 @@ batch_size = 10
 # test_labels = test_labels.reshape(batch_size, num_classes)
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func))
+model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func, visualize=cv))
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
-model.add(MaxPool())
+model.add(MaxPool(visualize=cv))
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=pool1_out_shape, kernel_size=kernel_size, filters=filters_2, activation=conv_func)) 
+model.add(Conv2D(input_shape=pool1_out_shape, kernel_size=kernel_size, filters=filters_2, activation=conv_func, visualize=cv)) 
 
 # **MaxPooling Layer**: Downsampling again
-model.add(MaxPool())
+model.add(MaxPool(visualize=cv))
 
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
 model.add(Flatten())
@@ -135,13 +138,13 @@ model.add(Flatten())
 model.add(Dropout(dropout_rate))
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(flatten_out_shape, dense1_out_neurons, activation=dense1_func))
+model.add(Dense(flatten_out_shape, dense1_out_neurons, activation=dense1_func, visualize=cv))
 
 # **Dropout Layer**: Regularization to prevent overfitting
 model.add(Dropout(dropout_rate))
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
-model.add(Dense(dense1_out_neurons, num_classes, activation=dense2_func))
+model.add(Dense(dense1_out_neurons, num_classes, activation=dense2_func, visualize=cv))
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)

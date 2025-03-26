@@ -8,7 +8,7 @@ from visualize import conv
 Conv2D layer performs a 2D convolution on the input image
 """
 class Conv2D(Layer):
-    def __init__(self, input_shape, kernel_size, filters, stride=1, padding=0, activation=Relu()):
+    def __init__(self, input_shape, kernel_size, filters, stride=1, padding=0, activation=Relu(), visualize=None):
         self.filters = filters
         self.stride = stride
         self.padding = padding
@@ -39,6 +39,8 @@ class Conv2D(Layer):
 
         self.activation = activation
 
+        self.cv = visualize
+
     def forward(self, input):
         self.input = input       
         
@@ -56,6 +58,9 @@ class Conv2D(Layer):
 
         feature_map = self.activation.forward(feature_map)
 
+        self.cv.update_feature_maps(feature_map)
+        self.cv.refresh()
+
         # conv.conv_feature_maps(feature_map, layer_name="Conv Layer")
         # conv.conv_kernels(self.kernels, layer_name="Conv Layer")
 
@@ -71,30 +76,34 @@ class Conv2D(Layer):
         input_gradient = np.zeros_like(self.input, dtype=np.float64)
         bias_gradient = np.zeros_like(self.bias, dtype=np.float64)
 
-        print("kernel gradient", kernel_gradient.shape)
-        print("input gradient", input_gradient.shape)
-        print("bias gradient", bias_gradient.shape)
-        print("output gradient", output_gradient.shape)
+        print("Output Gradient Shape: ", output_gradient.shape)
+        print("Kernel Shape: ", self.kernels.shape)
+        print("Input Shape: ", self.input.shape)
+        print("Bias Shape: ", self.bias.shape)
+
 
         # Compute gradients with respect to the filters and biases
         for y in range(output_height):
             for x in range(output_width):
                 # Extract the input slice for each position of the filter
-                region = self.input[y * self.stride:y * self.stride + self.kernel_size, 
-                                   x * self.stride:x * self.stride + self.kernel_size, :]
+                y_start = y * self.stride
+                y_end = y_start + self.kernel_size
+                x_start = x * self.stride
+                x_end = x_start + self.kernel_size
+
+                region = self.input[y_start:y_end, x_start:x_end, :]
                 
 
                 # Calculate the gradient of the loss with respect to the filters
                 for f in range(num_filters):
                     result = region * output_gradient[y, x, f]
-                    try:
-                        kernel_gradient[:, :, :, f] += result
-                    except ValueError as e:
-                        print("result", result.shape)
-
-                    input_gradient[y * self.stride:y * self.stride + self.kernel_size, 
-                                   x * self.stride:x * self.stride + self.kernel_size, :] += self.kernels[:, :, :, f] * output_gradient[y, x, f]
+                    
+                    kernel_gradient[:, :, :, f] += result
+                
+                    input_gradient[y_start:y_end, x_start:x_end, :] += self.kernels[:, :, :, f] * output_gradient[y, x, f]
                     bias_gradient[f] += output_gradient[y, x, f] 
+                
+
 
             
 
@@ -103,6 +112,10 @@ class Conv2D(Layer):
 
         self.kernels -= learning_rate * kernel_gradient
         self.bias -= learning_rate * bias_gradient.reshape(self.bias.shape)
+
+        self.cv.update_kernels(self.kernels)
+        self.cv.update_gradients(input_gradient)
+        self.cv.refresh()
 
         # conv.conv_gradients(self, layer_name="Conv Layer")
 

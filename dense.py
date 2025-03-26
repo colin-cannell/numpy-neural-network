@@ -8,7 +8,7 @@ class Dense(Layer):
     @param input_size: number of input neurons
     @param output_size: number of output neurons
     """
-    def __init__(self, input_size, output_size, activation):
+    def __init__(self, input_size, output_size, activation, visualize=None):
         self.input_size = input_size
         self.output_size = output_size
         self.activation = activation
@@ -20,6 +20,8 @@ class Dense(Layer):
         self.input = None
         self.output = None
 
+        self.cv = visualize
+
 
     def forward(self, input):
         self.input = input
@@ -28,6 +30,7 @@ class Dense(Layer):
         self.output = self.activation.forward(z)
 
         # dense.dense_neuron_activations(self.output, "Dense Layer Forward Pass")
+
         
         return self.output
         
@@ -47,5 +50,8 @@ class Dense(Layer):
         # dense.dense_gradient_flow(self, "Dense Layer Gradient Flow")
 
         input_gradient = np.dot(dL_dz, self.weights.T)
+
+        self.cv.update_weights(self.weights)
+        self.cv.refresh()
         return input_gradient
 
