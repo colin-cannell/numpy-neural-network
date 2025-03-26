@@ -50,7 +50,7 @@ class Conv2D(Layer):
                 y_start = y * self.stride
                 x_end = x_start + self.kernel_size
                 y_end = y_start + self.kernel_size
-                region = input[y_start:y_end, x_start:x_end]
+                region = input[y_start:y_end, x_start:x_end, :]
                 for f in range(self.feature_map_shape[2]):
                     feature_map[y, x, f] = np.sum(region * self.kernels[:, :, :, f]) + self.bias[f]
 
@@ -71,19 +71,30 @@ class Conv2D(Layer):
         input_gradient = np.zeros_like(self.input, dtype=np.float64)
         bias_gradient = np.zeros_like(self.bias, dtype=np.float64)
 
+        print("kernel gradient", kernel_gradient.shape)
+        print("input gradient", input_gradient.shape)
+        print("bias gradient", bias_gradient.shape)
+        print("output gradient", output_gradient.shape)
+
         # Compute gradients with respect to the filters and biases
         for y in range(output_height):
             for x in range(output_width):
                 # Extract the input slice for each position of the filter
-                slice = self.input[y * self.stride:y * self.stride + self.kernel_size, 
+                region = self.input[y * self.stride:y * self.stride + self.kernel_size, 
                                    x * self.stride:x * self.stride + self.kernel_size, :]
+                
 
                 # Calculate the gradient of the loss with respect to the filters
-                for c in range(num_filters):
-                    kernel_gradient[:, :, :, c] += slice * output_gradient[y, x, c]
+                for f in range(num_filters):
+                    result = region * output_gradient[y, x, f]
+                    try:
+                        kernel_gradient[:, :, :, f] += result
+                    except ValueError as e:
+                        print("result", result.shape)
+
                     input_gradient[y * self.stride:y * self.stride + self.kernel_size, 
-                                   x * self.stride:x * self.stride + self.kernel_size, :] += self.kernels[:, :, :, c] * output_gradient[y, x, c]
-                    bias_gradient[c] += output_gradient[y, x, c] 
+                                   x * self.stride:x * self.stride + self.kernel_size, :] += self.kernels[:, :, :, f] * output_gradient[y, x, f]
+                    bias_gradient[f] += output_gradient[y, x, f] 
 
             
 

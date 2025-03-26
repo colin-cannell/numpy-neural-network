@@ -47,22 +47,26 @@ def load_mnist_labels(filename):
     return labels
 
 # Load the MNIST dataset
-train_data = load_mnist_images(train_images_path)
-train_labels = load_mnist_labels(train_labels_path)
+raw_images = load_mnist_images(train_images_path)
+raw_labels = load_mnist_labels(train_labels_path)
 
 # print(f"train_data shape: {train_data.shape}")
 # print(f"train_labels shape: {train_labels.shape}")
 
 # Normalize the images
-train_images = train_data / 255.0
+train_images = raw_images / 255.0
 
 # Reshape the images to (num_samples, 1, 28, 28) for grayscale (1 channel, 28x28)
 train_images = train_images.reshape(60000, 28, 28, 1)
 T, H, W, C = train_images.shape
 input_shape = (H, W, C)
 
-train_labels = np.eye(10)[train_labels]
-train_labels = train_labels.reshape(-1, 10)
+size = 10
+
+train_labels = np.eye(10)[raw_labels]
+
+train_images = train_images[:size]
+train_labels = train_labels[:size]
 
 # Define the activation functions in use
 conv_func = LeakyRelu()
@@ -106,11 +110,11 @@ dropout_rate = 0.5
 
 batch_size = 10
 
-test_data = train_data[:batch_size]
-test_data = test_data.reshape(batch_size, H, W, C)
+# test_data = train_data[:batch_size]
+# test_data = test_data.reshape(batch_size, H, W, C)
 
-test_labels = train_labels[:batch_size]
-test_labels = test_labels.reshape(batch_size, num_classes)
+# test_labels = train_labels[:batch_size]
+# test_labels = test_labels.reshape(batch_size, num_classes)
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
 model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func))
@@ -140,4 +144,4 @@ model.add(Dropout(dropout_rate))
 model.add(Dense(dense1_out_neurons, num_classes, activation=dense2_func))
 
 # Train the model
-model.train(train_data, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)
+model.train(train_images, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)

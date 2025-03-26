@@ -12,15 +12,18 @@ class conv:
     def conv_feature_maps(feature_maps, layer_name="Conv Layer"):
         num_filters = feature_maps.shape[-1]
         fig, axes = plt.subplots(1, num_filters, figsize=(20, 5))
-        
+
         for i in range(num_filters):
             ax = axes[i] if num_filters > 1 else axes
-            ax.imshow(feature_maps[0, :, :, i], cmap="viridis")  # Assuming batch size = 1
-            ax.set_title(f"{layer_name} - Filter {i+1}")
+            ax.imshow(feature_maps[:, :, i], cmap="viridis")
+            ax.set_title(f"{i+1}", fontsize=10)
             ax.axis("off")
-        
-        plt.suptitle(f"Feature Maps from {layer_name}")
+
+        plt.suptitle(f"Feature Maps from {layer_name}", fontsize=14, y=1.05)  # Move title up
+        plt.tight_layout()  # Adjust layout to prevent overlap
+        plt.subplots_adjust(top=0.85)  # Give space for the title
         plt.show()
+
 
     # kernels
     def conv_kernels(kernels, layer_name="Conv Layer"):
@@ -30,10 +33,12 @@ class conv:
         for i in range(num_filters):
             ax = axes[i] if num_filters > 1 else axes
             ax.imshow(kernels[:, :, 0, i], cmap="gray")  # Assuming 1 channel for visualization
-            ax.set_title(f"{layer_name} - Filter {i+1}")
+            ax.set_title(f"{i+1}")
             ax.axis("off")
 
         plt.suptitle(f"Kernels from {layer_name}")
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.85)
         plt.show()
     
     # gradient flow
@@ -57,23 +62,25 @@ class maxpool:
         for i in range(num_filters):
             # Before Pooling
             ax1 = axes[0, i] if num_filters > 1 else axes[0]
-            ax1.imshow(before_pooling[0, :, :, i], cmap="viridis")
-            ax1.set_title(f"{layer_name} - Filter {i+1} (Before)")
+            ax1.imshow(before_pooling[:, :, i], cmap="viridis")
+            ax1.set_title(f"{i+1}")
             ax1.axis("off")
 
             # After Pooling
             ax2 = axes[1, i] if num_filters > 1 else axes[1]
-            ax2.imshow(after_pooling[0, :, :, i], cmap="viridis")
-            ax2.set_title(f"{layer_name} - Filter {i+1} (After)")
+            ax2.imshow(after_pooling[:, :, i], cmap="viridis")
+            ax2.set_title(f"{i+1}")
             ax2.axis("off")
 
         plt.suptitle(f"Pooled Feature Maps - {layer_name}")
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.85)
         plt.show()
 
     # activation distribution before and after pooling
     def maxpool_activation_distribution(before_pooling, after_pooling, layer_name="MaxPool Layer"):
-        before_activations = before_pooling.flatten()
-        after_activations = after_pooling.flatten()
+        before_activations = np.array(before_pooling).flatten()
+        after_activations = np.array(after_pooling).flatten()
 
         plt.figure(figsize=(10, 5))
         plt.hist(before_activations, bins=50, alpha=0.5, label="Before Pooling", color='blue')
@@ -87,8 +94,8 @@ class maxpool:
 class flatten:
     # flattened activation distribution
     def flattened_distribution(before_flatten, after_flatten, layer_name="Flatten Layer"):
-        before_activations = before_flatten.flatten()
-        after_activations = after_flatten.flatten()
+        before_activations = np.array(before_flatten).flatten()
+        after_activations = np.array(after_flatten).flatten()
 
         plt.figure(figsize=(10, 5))
         plt.hist(before_activations, bins=50, alpha=0.5, label="Before Flattening", color='blue')
@@ -103,9 +110,9 @@ class dense:
     # neuron activations
     def dense_neuron_activations(activations, layer_name="Dense Layer"):
         plt.figure(figsize=(10, 5))
-        sns.heatmap(activations, cmap="viridis", xticklabels=False, yticklabels=False)
+        sns.heatmap(activations.reshape(1, -1), cmap="viridis", xticklabels=False, yticklabels=False)
         plt.xlabel("Neurons")
-        plt.ylabel("Samples (Batch)")
+        plt.ylabel("Activation")
         plt.title(f"Neuron Activations - {layer_name}")
         plt.show()
 
@@ -121,8 +128,8 @@ class dense:
 
     # gradient flow
     def dense_gradient_flow(layer, layer_name="Dense Layer"):
-        grad_values = layer.weights.flatten()  # Assuming gradients are stored in layer.weights
-
+        grad_values = layer.weights.flatten()
+        
         plt.figure(figsize=(8, 6))
         plt.hist(grad_values, bins=50, color='red', alpha=0.7)
         plt.xlabel("Gradient Value")
@@ -130,7 +137,6 @@ class dense:
         plt.title(f"Gradient Distribution - {layer_name}")
         plt.grid(True)
         plt.show()
-
 
 class dropout:
     # neuron activations before and after dropout
@@ -144,5 +150,43 @@ class dropout:
         plt.legend()
         plt.show()
 
-
-
+class NetworkVisualizer:
+    def __init__(self):
+        self.epochs = []
+        self.losses = []
+        self.accuracies = []
+        
+        plt.ion()  # Enable interactive mode
+        self.fig, self.ax = plt.subplots(1, 2, figsize=(12, 5))
+    
+    def update(self, epoch, loss, accuracy):
+        """Update the visualization with new data."""
+        self.epochs.append(epoch)
+        self.losses.append(loss)
+        self.accuracies.append(accuracy)
+        
+        self.ax[0].cla()
+        self.ax[0].plot(self.epochs, self.losses, 'r-', label='Loss')
+        self.ax[0].set_title('Training Loss')
+        self.ax[0].set_xlabel('Epoch')
+        self.ax[0].set_ylabel('Loss')
+        self.ax[0].legend()
+        
+        self.ax[1].cla()
+        self.ax[1].plot(self.epochs, self.accuracies, 'b-', label='Accuracy')
+        self.ax[1].set_title('Training Accuracy')
+        self.ax[1].set_xlabel('Epoch')
+        self.ax[1].set_ylabel('Accuracy')
+        self.ax[1].legend()
+        
+        plt.pause(0.1)  # Pause to update the figure
+    
+    def save(self, filename='training_progress.png'):
+        """Save the plot to a file."""
+        self.fig.savefig(filename)
+        print(f"Plot saved as {filename}")
+    
+    def show(self):
+        """Keep the plot open after training ends."""
+        plt.ioff()
+        plt.show()

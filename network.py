@@ -2,6 +2,7 @@ import numpy as np
 import math
 from activations import *
 import matplotlib.pyplot as plt
+from visualize import NetworkVisualizer
 
 """
 Neural Network class where layers can be added 
@@ -52,11 +53,13 @@ class NeuralNetwork:
 
     def train(self, x, y, epochs, learning_rate, loss, optimizer):
         num_samples = x.shape[0]
-
+        total = len(x)
+        i = 0
         for epoch in range(epochs):
             epochs_loss = 0
             correct_pred = 0
             for xi, yi in zip(x, y):
+                i += 1
                 xi = np.expand_dims(xi, axis=-1)
 
                 output = self.forward(xi)
@@ -65,8 +68,9 @@ class NeuralNetwork:
                 loss_value = loss.forward(output, yi)
                 epochs_loss += loss_value
 
-                # Backward pass
                 output_gradient = loss.backward(output, yi)
+
+                # Backward pass                output_gradient = loss.backward(output, yi)
                 output_gradient = self.gradient_clipping(output_gradient)
                 self.backward(output_gradient, learning_rate)
 
@@ -75,14 +79,16 @@ class NeuralNetwork:
                 #         optimizer.update([layer.kernels, layer.bias], [layer.kernel_gradient, layer.bias_gradient])
 
                 prediction = np.argmax(output)
-                correct_pred += np.sum(prediction == np.argmax(yi))
+                true = np.argmax(yi)
+                correct_pred += np.sum(prediction == true)
+                print(f"\rProcessing {i}/{total}, Prediction : {prediction}, True : {true}, Loss : {loss_value}", end="", flush=True)
 
             
             epoch_accuracy = correct_pred / num_samples
-            self.visualizer.update(epoch + 1, epochs_loss / num_samples, epoch_accuracy)
+            NetworkVisualizer().visualizer.update(epoch + 1, epochs_loss / num_samples, epoch_accuracy)
             print(f'Epoch {epoch+1}/{epochs}, Loss: {epochs_loss/num_samples}, Accuracy: {epoch_accuracy}')
-        self.visualizer.save()
-        self.visualizer.show()
+        NetworkVisualizer().visualizer.save()
+        NetworkVisualizer().visualizer.show()
 
     def predict(self, x):
         output = self.forward(x)
@@ -109,43 +115,3 @@ class NeuralNetwork:
         return output_dim  # Return only the number of output neurons
     
 
-class TrainingVisualizer:
-    def __init__(self):
-        self.epochs = []
-        self.losses = []
-        self.accuracies = []
-        
-        plt.ion()  # Enable interactive mode
-        self.fig, self.ax = plt.subplots(1, 2, figsize=(12, 5))
-    
-    def update(self, epoch, loss, accuracy):
-        """Update the visualization with new data."""
-        self.epochs.append(epoch)
-        self.losses.append(loss)
-        self.accuracies.append(accuracy)
-        
-        self.ax[0].cla()
-        self.ax[0].plot(self.epochs, self.losses, 'r-', label='Loss')
-        self.ax[0].set_title('Training Loss')
-        self.ax[0].set_xlabel('Epoch')
-        self.ax[0].set_ylabel('Loss')
-        self.ax[0].legend()
-        
-        self.ax[1].cla()
-        self.ax[1].plot(self.epochs, self.accuracies, 'b-', label='Accuracy')
-        self.ax[1].set_title('Training Accuracy')
-        self.ax[1].set_xlabel('Epoch')
-        self.ax[1].set_ylabel('Accuracy')
-        self.ax[1].legend()
-        
-        plt.pause(0.1)  # Pause to update the figure
-    
-    def save(self, filename='training_progress.png'):
-        """Save the plot to a file."""
-        self.fig.savefig(filename)
-        print(f"Plot saved as {filename}")
-    
-    def show(self):
-        """Keep the plot open after training ends."""
-        plt.ioff()
-        plt.show()
