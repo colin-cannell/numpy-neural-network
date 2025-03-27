@@ -1,7 +1,6 @@
 import numpy as np
 import math
 from layer import Layer
-from visualize import maxpool
 
 """
 MaxPool layer reduces the size of the image by taking the maximum value in each region
@@ -11,9 +10,12 @@ class MaxPool(Layer):
     @param pool_size: size of the pooling region
     @param strides: strides of the pooling
     """
-    def __init__(self, pool_size=2, stride=1):
+    def __init__(self, pool_size=2, stride=1, visualize=None, id=0):
         self.pool_size = pool_size
         self.stride = stride
+        self.visualizer = visualize
+        self.id = id
+        self.name = f"MaxPool{id}"
     
     """
     Forward pass of the MaxPool layer
@@ -57,8 +59,8 @@ class MaxPool(Layer):
                     
         self.output = output 
 
-        # maxpool.maxpool_pooled_feature_maps(self.input, self.output, layer_name="MaxPool Layer")
-        # maxpool.maxpool_activation_distribution(self.input, self.output, layer_name="MaxPool Layer")
+        if self.visualizer:
+            self.visualizer.update_pooled_feature_maps(self.id, output)
            
         return output
 
@@ -74,7 +76,8 @@ class MaxPool(Layer):
                     if 0 <= max_y < self.input_H and 0 <= max_x < self.input_W:
                         input_gradient[max_y, max_x, c] += output_gradient[y, x, c]
         
+        if self.visualizer:
+            self.visualizer.update_gradients(self.name, input_gradient)
 
-        # Return the computed input gradients
         return input_gradient
 

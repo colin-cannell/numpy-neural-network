@@ -10,8 +10,7 @@ from dropout import Dropout
 from activations import *
 from losses import *
 from optimizers import Adam
-from visualize import ContinuousVisualizer as cv
-
+from visualizer import Visualizer
 
 train_images_path = "MNIST_ORG/train-images.idx3-ubyte"
 train_labels_path = "MNIST_ORG/train-labels.idx1-ubyte"
@@ -62,7 +61,7 @@ train_images = train_images.reshape(60000, 28, 28, 1)
 T, H, W, C = train_images.shape
 input_shape = (H, W, C)
 
-size = 10
+size = 50
 
 train_labels = np.eye(10)[raw_labels]
 
@@ -70,18 +69,18 @@ train_images = train_images[:size]
 train_labels = train_labels[:size]
 
 # Define the activation functions in use
-conv_func = LeakyRelu()
-dense1_func = LeakyRelu()
+conv_func = Relu()
+dense1_func = Relu()
 dense2_func = Softmax()
 adam = Adam()
 
 
 loss_funcion = CategoricalCrossEntropyLoss()
 
-cv = cv()
+visualizer = Visualizer()
 
 # Define the model architecture
-model = NeuralNetwork(visualize=cv)
+model = NeuralNetwork(visualize=visualizer)
 
 num_classes = 10
 
@@ -120,31 +119,40 @@ batch_size = 10
 # test_labels = test_labels.reshape(batch_size, num_classes)
 
 # 1**Conv Layer 1**: 32 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func, visualize=cv))
+conv1 = Conv2D(input_shape=input_shape, kernel_size=kernel_size, filters=filters_1, activation=conv_func, visualize=visualizer, id=1)
+model.add(conv1)
 
 # **MaxPooling Layer**: Reduces spatial dimensions (downsampling)
-model.add(MaxPool(visualize=cv))
+maxpool1 = MaxPool(visualize=visualizer, id=1)
+model.add(maxpool1)
 
 # **Conv Layer 2**: 64 filters, (3x3) kernel, ReLU activation
-model.add(Conv2D(input_shape=pool1_out_shape, kernel_size=kernel_size, filters=filters_2, activation=conv_func, visualize=cv)) 
+conv2 = Conv2D(input_shape=pool1_out_shape, kernel_size=kernel_size, filters=filters_2, activation=conv_func, visualize=visualizer, id=2)
+model.add(conv2)
 
 # **MaxPooling Layer**: Downsampling again
-model.add(MaxPool(visualize=cv))
+maxpool2 = MaxPool(visualize=visualizer, id=2)
+model.add(maxpool2)
 
 # **Flatten Layer**: Converts 2D feature maps into a 1D vector 
-model.add(Flatten())
+flatten1 = Flatten()
+model.add(flatten1)
 
 # **Dropout Layer**: Regularization to prevent overfitting
-model.add(Dropout(dropout_rate))
+dropout1 = Dropout(dropout_rate)
+model.add(dropout1)
 
 # **Fully Connected (Dense) Layer 1**: 128 neurons, ReLU
-model.add(Dense(flatten_out_shape, dense1_out_neurons, activation=dense1_func, visualize=cv))
+dense1 = Dense(flatten_out_shape, dense1_out_neurons, activation=dense1_func, visualize=visualizer, id=1)
+model.add(dense1)
 
 # **Dropout Layer**: Regularization to prevent overfitting
-model.add(Dropout(dropout_rate))
+dropout2 = Dropout(dropout_rate)
+model.add(dropout2)
 
 # **Fully Connected (Dense) Layer 2**: 10 neurons (digits 0-9), Softmax activation
-model.add(Dense(dense1_out_neurons, num_classes, activation=dense2_func, visualize=cv))
+dense2 = Dense(dense1_out_shape, num_classes, activation=dense2_func, visualize=visualizer, id=2)
+model.add(dense2)
 
 # Train the model
 model.train(train_images, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)

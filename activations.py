@@ -6,18 +6,20 @@ class Relu(Layer):
         return np.maximum(0, x)
 
     def backward(self, x, learning_rate=None):
-        return x > 0
+        return np.where(x > 0, 1, 0)
+        
     
 class LeakyRelu(Layer):
     def __init__(self, alpha=0.01):
         self.alpha = alpha
+       
 
     def forward(self, x):
         return np.where(x > 0, x, x * self.alpha)
     
     def backward(self, x, learning_rate=None):
-        return np.where(x > 0, 1, self.alpha)
-
+        dx = np.where(x> 0, 1, self.alpha)
+        return dx
 class Sigmoid(Layer):
     def __init__(self):
         super().__init__()
@@ -51,12 +53,6 @@ class Softmax:
         self.output = tmp / np.sum(tmp, axis=0, keepdims=True)
         return self.output
 
-    def backward(self, output_gradient, learning_rate=None):
-        output_neurons = output_gradient.shape[0]
-
-        s = self.output.reshape(output_neurons, 1)
-        jacobian = np.diagflat(s) - np.dot(s, s.T)
-        output = np.dot(jacobian, output_gradient)
-
-        return output
+    def backward(self, x, learning_rate=None):
+        return x * (1 - x)
 

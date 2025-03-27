@@ -1,7 +1,6 @@
 import numpy as np
 import math
 from activations import *
-import matplotlib.pyplot as plt
 
 """
 Neural Network class where layers can be added 
@@ -11,7 +10,9 @@ Backpropogation between layers is handled here.
 class NeuralNetwork:
     def __init__(self, visualize=None):
         self.layers = []
-        self.cv = visualize
+        self.visualizer = visualize
+
+
     
     def add(self, layer):
         """
@@ -24,11 +25,11 @@ class NeuralNetwork:
         self.activations = []
         self.inputs = [input]
 
-        print("input shape:", input.shape)  
+        # print("input shape:", input.shape)  
 
         for layer in self.layers:
             input = layer.forward(input)  # Apply layer operation
-            print("output shape for layer:", input.shape, "layer:", layer.__class__.__name__)
+            # print("output shape for layer:", input.shape, "layer:", layer.__class__.__name__)
 
             self.inputs.append(input)  # Store the output before activation
 
@@ -40,12 +41,12 @@ class NeuralNetwork:
         return input
 
     def backward(self, output_gradient, learning_rate):
-        print("input_gradient shape:", output_gradient.shape)
+        # print("input_gradient shape:", output_gradient.shape)
 
         for i in reversed(range(len(self.layers))):
             layer = self.layers[i]
             output_gradient = layer.backward(output_gradient, learning_rate)
-            print("layer:", layer.__class__.__name__, "output_gradient shape:", output_gradient.shape)
+            # print("layer:", layer.__class__.__name__, "output_gradient shape:", output_gradient.shape)
 
         
         return output_gradient
@@ -56,14 +57,17 @@ class NeuralNetwork:
             gradients = gradients * (threshold / norm)
         return gradients
 
-
     def train(self, x, y, epochs, learning_rate, loss, optimizer):
         num_samples = x.shape[0]
         total = len(x)
-        i = 0
+
+        epoch_losses = []
+        epoch_accuracies = []
+
         for epoch in range(epochs):
             epochs_loss = 0
             correct_pred = 0
+            i = 0
             for xi, yi in zip(x, y):
                 i += 1
                 # xi = np.expand_dims(xi, axis=-1)
@@ -87,22 +91,24 @@ class NeuralNetwork:
                 prediction = np.argmax(output)
                 true = np.argmax(yi)
                 correct_pred += np.sum(prediction == true)
-                self.cv.update_metrics(epoch=epoch, loss=loss_value, accuracy=correct_pred/num_samples)
-                self.cv.refresh()
+
                 print(f"\rProcessing {i}/{total}, Prediction : {prediction}, True : {true}, Loss : {loss_value}", end="", flush=True)
 
             
             epoch_accuracy = correct_pred / num_samples
-            self.cv.update_metrics(epoch=epoch, loss=epochs_loss/num_samples, accuracy=epoch_accuracy)
-            self.cv.refresh()
+            epoch_avg_loss = epochs_loss / num_samples
 
-            print(f'Epoch {epoch+1}/{epochs}, Loss: {epochs_loss/num_samples}, Accuracy: {epoch_accuracy}')
+            epoch_losses.append(epoch_avg_loss)
+            epoch_accuracies.append(epoch_accuracy)
+            
+            self.visualizer.update(epoch_losses, epoch_accuracies)
+            print(f'\nEpoch {epoch+1}/{epochs}, Loss: {epochs_loss/num_samples}, Accuracy: {epoch_accuracy}')
 
     def predict(self, x):
         output = self.forward(x)
         return np.argmax(output)
     
-    def conv_output_shape(self, input_shape, kernel_size, filters, stride=1, padding=0):
+    def conv_output_shape(self, input_shape, kernel_size, filters, stride=1, padding=1):
         H, W, C = input_shape
         k_H, k_W = kernel_size, kernel_size  # If square kernel, otherwise pass as tuple
         H_out = math.ceil((H - k_H + 2 * padding) / stride + 1)

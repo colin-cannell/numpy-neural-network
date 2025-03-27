@@ -14,27 +14,17 @@ class CategoricalCrossEntropyLoss:
         # Ensure y_pred is in the right shape
         y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)  # Clip to prevent log(0)
 
-        # Assuming y_true is a one-hot encoded vector (or batch)
-        # Correct class probabilities are selected using y_true as index
-        correct_class_prob = np.sum(y_true * safe_log(y_pred), axis=0)
-
-        # Calculate the loss (Mean Cross-Entropy Loss)
-        output = -np.mean(correct_class_prob)
-        return output
+        # Calculate loss using standard categorical cross-entropy formula
+        loss = -np.sum(y_true * np.log(y_pred)) / y_pred.shape[0]
+        return loss
 
     def backward(self, y_pred, y_true):
         y_pred = np.clip(y_pred, self.epsilon, 1 - self.epsilon)  # Clip to prevent log(0)
 
-        # Compute the gradient for each class
-        grad = np.zeros_like(y_pred)  # Initialize gradient
-
-        # Backpropagation: Gradient calculation for each sample
-        grad = -y_true / y_pred  # For one-hot encoded labels, we divide by y_pred for the correct class
-        
-        return grad  # Gradient with respect to y_pred
+        # Standard gradient calculation for categorical cross-entropy
+        grad = -y_true / y_pred + (1 - y_true) / (1 - y_pred)
+        return grad
       
-
-
 
 class SparseCategoricalCrossEntropyLoss:
     def __init__(self):

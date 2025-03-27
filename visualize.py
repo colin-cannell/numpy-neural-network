@@ -1,11 +1,9 @@
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 import numpy as np
 import seaborn as sns
-
-# network
-# output gradient
-# loss
-# accuracy
+import time
+import threading
 
 class conv:
     # feature maps
@@ -190,3 +188,97 @@ class NetworkVisualizer:
         """Keep the plot open after training ends."""
         plt.ioff()
         plt.show()
+
+class ContinuousVisualizer:
+    def __init__(self):
+        self.epochs = []
+        self.losses = []
+        self.accuracies = []
+        self.feature_maps = None
+        self.kernels = None
+        self.weights = None
+        self.gradients = None
+        
+        plt.ion()
+        self.fig, self.ax = plt.subplots(2, 3, figsize=(15, 10))
+        self.running = True
+
+        # Start visualization in a separate thread
+        self.thread = threading.Thread(target=self.update_loop, daemon=True)
+        self.thread.start()
+
+        # Create axes for multiple buttons on the side
+        button_ax1 = plt.axes([0.85, 0.8, 0.1, 0.05])  # Position 1
+        self.button1 = Button(button_ax1, 'More Metrics')
+    
+    def update_metrics(self, epoch, loss, accuracy):
+        self.epochs.append(epoch)
+        self.losses.append(loss)
+        self.accuracies.append(accuracy)
+    
+    def update_feature_maps(self, feature_maps):
+        self.feature_maps = feature_maps
+    
+    def update_kernels(self, kernels):
+        self.kernels = kernels
+    
+    def update_weights(self, weights):
+        self.weights = weights
+    
+    def update_gradients(self, gradients):
+        self.gradients = gradients
+    
+    def update_loop(self):
+        while self.running:
+            self.refresh()
+            time.sleep(0.5)  # Refresh rate
+    
+    def refresh(self):
+        self.ax[0, 0].cla()
+        self.ax[0, 1].cla()
+        self.ax[0, 2].cla()
+        self.ax[1, 0].cla()
+        self.ax[1, 1].cla()
+        self.ax[1, 2].cla()
+        
+        # Loss Plot
+        if self.epochs:
+            self.ax[0, 0].plot(self.epochs, self.losses, 'r-', label='Loss')
+            self.ax[0, 0].set_title('Loss Over Time')
+            self.ax[0, 0].legend()
+        
+        # Accuracy Plot
+        if self.epochs:
+            self.ax[0, 1].plot(self.epochs, self.accuracies, 'b-', label='Accuracy')
+            self.ax[0, 1].set_title('Accuracy Over Time')
+            self.ax[0, 1].legend()
+        
+        # Feature Maps
+        if self.feature_maps is not None:
+            self.ax[0, 2].imshow(self.feature_maps[:, :, 0], cmap='viridis')
+            self.ax[0, 2].set_title('Feature Map')
+        
+        # Kernels
+        if self.kernels is not None:
+            self.ax[1, 0].imshow(self.kernels[:, :, 0, 0], cmap='gray')
+            self.ax[1, 0].set_title('Kernel')
+        
+        # Weight Distribution
+        if self.weights is not None:
+            self.ax[1, 1].hist(self.weights.flatten(), bins=50, color='blue', alpha=0.7)
+            self.ax[1, 1].set_title('Weight Distribution')
+        
+        # Gradient Distribution
+        if self.gradients is not None:
+            self.ax[1, 2].hist(self.gradients.flatten(), bins=50, color='red', alpha=0.7)
+            self.ax[1, 2].set_title('Gradient Distribution')
+        
+        plt.draw()
+        plt.pause(0.01)
+    
+    def stop(self):
+        self.running = False
+        self.thread.join()
+        plt.ioff()
+        plt.show()
+
