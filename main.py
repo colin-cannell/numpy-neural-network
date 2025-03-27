@@ -11,6 +11,7 @@ from activations import *
 from losses import *
 from optimizers import Adam
 from visualizer import Visualizer
+import threading
 
 train_images_path = "MNIST_ORG/train-images.idx3-ubyte"
 train_labels_path = "MNIST_ORG/train-labels.idx1-ubyte"
@@ -61,7 +62,7 @@ train_images = train_images.reshape(60000, 28, 28, 1)
 T, H, W, C = train_images.shape
 input_shape = (H, W, C)
 
-size = 50
+size = 100
 
 train_labels = np.eye(10)[raw_labels]
 
@@ -155,4 +156,5 @@ dense2 = Dense(dense1_out_shape, num_classes, activation=dense2_func, visualize=
 model.add(dense2)
 
 # Train the model
-model.train(train_images, train_labels, epochs=10, learning_rate=0.01, loss=loss_funcion, optimizer=adam)
+model.train(train_images, train_labels, epochs=10, learning_rate=0.001, loss=loss_funcion, optimizer=adam)
+

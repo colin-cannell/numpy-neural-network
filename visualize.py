@@ -282,3 +282,237 @@ class ContinuousVisualizer:
         plt.ioff()
         plt.show()
 
+
+class Visualizer:
+    def __init__(self):
+        # Initialize data
+        self.kernels = {}
+        self.kernels_bias = {}
+        self.weights = {}
+        self.weights_bias = {}
+        self.gradients = {}
+        self.feature_maps = {}
+        self.pooled_feature_maps = {}
+
+        self.loss = [0]  # Initialize with some data
+        self.accuracy = [0]  # Initialize with some data
+
+        self.view_mode = "accuracy_loss"
+
+        # Create a thread-safe queue for updates
+        self.update_queue = queue.Queue()
+
+        # Start the visualization directly
+        self._run_visualization()
+
+    def _run_visualization(self):
+        # Initialize plot on the main thread
+        import matplotlib
+        matplotlib.use('MacOSX')  # Explicitly use MacOSX backend
+
+        # Create the figure and axes
+        self.fig, self.axs = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Create buttons
+        self.buttons = []
+        button_labels = [
+            ('Accuracy/Loss', self.show_accuracy_loss),
+            ('Gradients', self.show_gradients),
+            ('Weights/Bias', self.show_weights_bias),
+            ('Kernels/Bias', self.show_kernels_bias),
+            ('Feature Maps', self.show_feature_maps),
+            ('Pooled Feature Maps', self.show_pooled_feature_maps)
+        ]
+        self._setup_buttons(button_labels)
+
+        # Display the initial view (accuracy/loss)
+        self._accuracy_loss_view()
+
+        # Show the plot without blocking
+        plt.show(block=False)
+
+    def _setup_buttons(self, button_labels):
+        height = 0.075
+        width = 0.2
+        bottom = 0.9
+        left = 0.05
+        inc = 0.1
+
+        for i, (label, callback) in enumerate(button_labels):
+            ax_button = plt.axes([left, bottom - i*inc, width, height])
+            button = Button(ax_button, label)
+            button.on_clicked(callback)
+            self.buttons.append(button)
+
+    # Update methods remain the same as in previous implementation
+    def update_accuracy_loss(self, loss, accuracy):
+        self.loss.append(loss)
+        self.accuracy.append(accuracy)
+        self._trigger_update()
+
+    def update_weights_bias(self, id, weights, bias):
+        self.weights[id] = weights
+        self.weights_bias[id] = bias
+        self._trigger_update()
+
+    def update_kernels_bias(self, id, kernels, bias):
+        self.kernels[id] = kernels
+        self.kernels_bias[id] = bias
+        self._trigger_update()
+
+    def update_gradients(self, name, gradients):
+        self.gradients[name] = gradients
+        self._trigger_update()
+
+    def update_feature_maps(self, id, feature_maps):
+        self.feature_maps[id] = feature_maps
+        self._trigger_update()
+
+    def update_pooled_feature_maps(self, id, pooled_feature_maps):
+        self.pooled_feature_maps[id] = pooled_feature_maps
+        self._trigger_update()
+
+    def _trigger_update(self):
+        if self.view_mode == "accuracy_loss":
+            self._accuracy_loss_view()
+        # Add other view modes as necessary
+        plt.pause(0.1)  # Allow the plot to update
+
+    # Button callback methods
+    def show_accuracy_loss(self, event):
+        self.view_mode = "accuracy_loss"
+        self._trigger_update()
+
+    def show_gradients(self, event):
+        self.view_mode = "gradients"
+        self._trigger_update()
+
+    def show_weights_bias(self, event):
+        self.view_mode = "weights_bias"
+        self._trigger_update()
+
+    def show_kernels_bias(self, event):
+        self.view_mode = "kernels_bias"
+        self._trigger_update()
+
+    def show_feature_maps(self, event):
+        self.view_mode = "feature_maps"
+        self._trigger_update()
+
+    def show_pooled_feature_maps(self, event):
+        self.view_mode = "pooled_feature_maps"
+        self._trigger_update()
+
+    # View methods (similar to previous implementation)
+    def _accuracy_loss_view(self):
+        self.axs[0].clear()  # Clear the axes for accuracy
+        self.axs[1].clear()  # Clear the axes for loss
+        
+        # Plot accuracy
+        self.axs[0].plot(self.accuracy, label='Accuracy', color='blue')
+        self.axs[0].set_title("Accuracy")
+        self.axs[0].set_xlabel("Image")
+        self.axs[0].set_ylabel("Accuracy")
+        self.axs[0].legend()
+
+        # Plot loss
+        self.axs[1].plot(self.loss, label='Loss', color='red')
+        self.axs[1].set_title("Loss")
+        self.axs[1].set_xlabel("Image")
+        self.axs[1].set_ylabel("Loss")
+        self.axs[1].legend()
+
+        plt.draw()  # Redraw the figure
+
+    # Other view methods remain the same as in previous implementation
+    def _gradients_view(self):
+        gradients = list(self.gradients.items())
+        num_layers = len(gradients)
+
+        if num_layers == 0:
+            return
+        
+        self.axs = plt.subplots(num_layers, 1)[1]
+
+        for i, (name, gradient) in enumerate(gradients):
+            self.axs[i].plot(gradient.flatten())
+            self.axs[i].set_title(f"Gradients {name}")
+
+    def _weights_bias_view(self):
+        weights = list(self.weights.items())
+        biases = list(self.weights_bias.items())
+        num_layers = len(weights)
+
+        if num_layers == 0:
+            return
+        
+        self.axs = plt.subplots(num_layers, 2)[1]
+
+        for i, ((w_id, weight), (b_id, bias)) in enumerate(zip(weights, biases)):
+            self.axs[i][0].plot(weight.flatten())
+            self.axs[i][0].set_title(f"Weights {w_id}")
+
+            self.axs[i][1].plot(bias)
+            self.axs[i][1].set_title(f"Bias {b_id}")
+
+    def _kernels_bias_view(self):
+        kernels = list(self.kernels.items())
+        biases = list(self.kernels_bias.items())
+        num_layers = len(kernels)
+
+        if num_layers == 0:
+            return
+
+        self.axs = plt.subplots(num_layers, 2)[1]
+
+        for i, ((k_id, kernel), (b_id, bias)) in enumerate(zip(kernels, biases)):
+            self.axs[i][0].plot(kernel.flatten())
+            self.axs[i][0].set_title(f"Kernels {k_id}")
+
+            self.axs[i][1].plot(bias)
+            self.axs[i][1].set_title(f"Bias {b_id}")
+
+    def _feature_maps_view(self):
+        feature_maps = list(self.feature_maps.items())
+        num_layers = len(feature_maps)
+
+        if num_layers == 0:
+            return
+        
+        num_cols = 8
+        num_rows = (sum([fm.shape[-1] for _, fm in feature_maps]) + num_cols - 1) // num_cols
+
+        self.axs = plt.subplots(num_rows, num_cols)[1]
+        self.axs = self.axs.flatten()
+
+        ax_index = 0
+        for i, (layer_id, feature_map) in enumerate(feature_maps):
+            num_features = feature_map.shape[-1]
+            for j in range(num_features):
+                if ax_index >= len(self.axs):
+                    break
+                feature_map_to_display = feature_map[:, :, j]
+                self.axs[ax_index].imshow(feature_map_to_display, cmap='viridis')
+                self.axs[ax_index].axis('off')
+                ax_index += 1
+
+        for i in range(ax_index, len(self.axs)):
+            self.axs[i].axis('off')
+
+    def _pooled_feature_maps_view(self):
+        pooled_feature_maps = list(self.pooled_feature_maps.items())
+        num_layers = len(pooled_feature_maps)
+
+        if num_layers == 0:
+            return
+
+        self.axs = plt.subplots(num_layers, 1)[1]
+
+        for i, (id, pooled_feature_map) in enumerate(pooled_feature_maps):
+            self.axs[i].imshow(pooled_feature_map)
+            self.axs[i].set_title(f"Pooled Feature Maps {id}")
+
+    def close(self):
+        # Close the plot
+        plt.close('all')
+

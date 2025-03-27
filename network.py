@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from activations import *
+import matplotlib.pyplot as plt
 
 """
 Neural Network class where layers can be added 
@@ -68,6 +69,8 @@ class NeuralNetwork:
             epochs_loss = 0
             correct_pred = 0
             i = 0
+            losses = []
+            accuracies = []
             for xi, yi in zip(x, y):
                 i += 1
                 # xi = np.expand_dims(xi, axis=-1)
@@ -92,17 +95,19 @@ class NeuralNetwork:
                 true = np.argmax(yi)
                 correct_pred += np.sum(prediction == true)
 
+                # Update metrics
+                losses.append(loss_value)
+                accuracies.append(correct_pred / i)
+
+                self.visualizer.update_accuracy_loss(losses, accuracies)
+                
                 print(f"\rProcessing {i}/{total}, Prediction : {prediction}, True : {true}, Loss : {loss_value}", end="", flush=True)
 
             
             epoch_accuracy = correct_pred / num_samples
             epoch_avg_loss = epochs_loss / num_samples
 
-            epoch_losses.append(epoch_avg_loss)
-            epoch_accuracies.append(epoch_accuracy)
-            
-            self.visualizer.update(epoch_losses, epoch_accuracies)
-            print(f'\nEpoch {epoch+1}/{epochs}, Loss: {epochs_loss/num_samples}, Accuracy: {epoch_accuracy}')
+            print(f'\nEpoch {epoch+1}/{epochs}, Loss: {epoch_avg_loss}, Accuracy: {epoch_accuracy}')
 
     def predict(self, x):
         output = self.forward(x)

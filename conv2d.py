@@ -34,7 +34,7 @@ class Conv2D(Layer):
         # select random values from a normal distribution with mean 0 and standard deviation 1 to initialize the kernels
 
         # he initialization of kernels for relu activations
-        self.kernels = np.random.randn(self.kernel_size, self.kernel_size, self.input_C, self.filters) * np.sqrt(2.0 / self.input_C)
+        self.kernels = np.random.randn(self.kernel_size, self.kernel_size, self.input_C, self.filters)
         self.bias = np.zeros((self.filters, 1))
 
         self.activation = activation
