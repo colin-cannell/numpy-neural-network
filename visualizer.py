@@ -1,27 +1,10 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
-import numpy as np
-import seaborn as sns
-import time
 import threading
+import time
 
-# general view
 
-# buttons of
-# accuracy / loss
-# weights
-# gradients
-
-# have id for each layer 
-# conv layer 1 has different id than conv layer 2
-
-# accuracy / loss
-# epoch accuracy
-# epoch loss
-
-# gradients
-# gradient of each individual layer
-# stack gradients on top of each other
+# TODO: currently graphs the accuracy and loss during the epoch want another display of each epochs accuracy and loss
 
 class Visualizer:
     def __init__(self):
@@ -42,7 +25,7 @@ class Visualizer:
         self.loss = []
         self.accuracy = []
 
-        self.view_mode = "accuracy_loss"
+        self.view_mode = "feature_maps"
 
         self.fig, self.axs = plt.subplots(2, 1, figsize=(10, 5))
 
@@ -59,8 +42,7 @@ class Visualizer:
 
         self.setup_buttons(button_labels)
 
-        plt.ion()
-        plt.show()
+        # plt.ion()
 
         # Start the update loop in a separate thread
         self.running = True
@@ -79,8 +61,6 @@ class Visualizer:
             button = Button(ax_button, label)
             button.on_clicked(callback)
             self.buttons.append(button)
-
-
 
     # update functions
     def update_accuracy_loss(self, loss, accuracy):
@@ -138,18 +118,17 @@ class Visualizer:
             self.axs = self.fig.subplots(2, 1)
 
         self.axs[0].plot(self.accuracy)
-        self.axs[0].set_title("Accuracy per Epoch")
-        self.axs[0].set_xlabel("Epoch")
+        self.axs[0].set_title("Accuracy")
+        self.axs[0].set_xlabel("image")
         self.axs[0].set_ylabel("Accuracy")
 
         self.axs[1].plot(self.loss)
-        self.axs[1].set_title("Loss per Epoch")
-        self.axs[1].set_xlabel("Epoch")
+        self.axs[1].set_title("Loss")
+        self.axs[1].set_xlabel("image")
         self.axs[1].set_ylabel("Loss")
 
         plt.tight_layout()
         plt.draw()
-        plt.pause(0.01)
 
     def gradients_view(self):
         gradients = list(self.gradients.items())
@@ -167,11 +146,9 @@ class Visualizer:
         for i, (name, gradient) in enumerate(gradients):
             self.axs[i].plot(gradient.flatten())
             self.axs[i].set_title(f"Gradients {name}")
-            self.axs[i].legend([f"Gradients {name}"])
 
         plt.tight_layout()
         plt.draw()
-        plt.pause(0.01)
 
     def weights_bias_view(self):
         weights = list(self.weights.items())
@@ -198,7 +175,6 @@ class Visualizer:
 
         plt.tight_layout()
         plt.draw()
-        plt.pause(0.01)
 
     def kernels_bias_view(self):
         kernels = list(self.kernels.items())
@@ -226,7 +202,6 @@ class Visualizer:
         
         plt.tight_layout()
         plt.draw()
-        plt.pause(0.01)
 
     def feature_maps_view(self):
         feature_maps = list(self.feature_maps.items())
@@ -235,20 +210,45 @@ class Visualizer:
         if num_layers == 0:
             return
 
+        # Calculate number of rows and columns based on the number of feature maps
+        num_cols = 8  # Set a reasonable number of columns, e.g., 8
+        num_rows = (sum([fm.shape[-1] for _, fm in feature_maps]) + num_cols - 1) // num_cols  # Total number of feature maps
+
+        # Create a figure and axes
         if self.fig is None or not plt.fignum_exists(self.fig.number):
-            self.fig, self.axs = plt.subplots(num_layers, 1, figsize=(10, 5 * num_layers))
+            self.fig, self.axs = plt.subplots(num_rows, num_cols, figsize=(8, 2 * num_rows))
         else:
             self.fig.clf()
-            self.axs = self.fig.subplots(num_layers, 1)
+            self.axs = self.fig.subplots(num_rows, num_cols)
 
-        for i, (id, feature_map) in enumerate(feature_maps):
-            self.axs[i].imshow(feature_map)
-            self.axs[i].set_title(f"Feature Maps {id}")
-            self.axs[i].legend([f"Feature Maps {id}"])
+        # Flatten the axes array to make iteration easier
+        self.axs = self.axs.flatten()
 
+        # Loop through each feature map in each layer and plot it
+        ax_index = 0  # Index for accessing axes
+        for i, (layer_id, feature_map) in enumerate(feature_maps):
+            num_features = feature_map.shape[-1]  # Number of channels in the feature map
+
+            for j in range(num_features):
+                if ax_index >= len(self.axs):  # If there are more feature maps than subplots, stop
+                    break
+
+                # Select the correct feature map channel
+                feature_map_to_display = feature_map[:, :, j]  # Choose the j-th channel
+
+                # Plot the feature map
+                self.axs[ax_index].imshow(feature_map_to_display, cmap='viridis')  # Use a colormap like 'viridis'
+                self.axs[ax_index].axis('off')  # Turn off axis for a cleaner look
+
+                ax_index += 1
+
+        # Turn off any unused axes if there are more subplots than feature maps
+        for i in range(ax_index, len(self.axs)):
+            self.axs[i].axis('off')
+
+        # Adjust layout for tight spacing
         plt.tight_layout()
         plt.draw()
-        plt.pause(0.01)
 
     def pooled_feature_maps_view(self):
         pooled_feature_maps = list(self.pooled_feature_maps.items())
@@ -270,45 +270,36 @@ class Visualizer:
 
         plt.tight_layout()
         plt.draw()
-        plt
     
     def update_loop(self):
-        """Improved update loop with better thread handling"""
-        try:
-            while self.running:
-                # Use plt.pause to process GUI events
-                self.refresh()
-                plt.pause(0.01)  # Slightly longer pause to ensure GUI responsiveness
-        except Exception as e:
-            print(f"Error in update loop: {e}")
-        finally:
-            plt.close(self.fig)
+        while self.running:
+            self.refresh()
+            time.sleep(0.5)  # Refresh rate
+           
 
-    def refresh(self):
-        """Enhanced refresh method with additional error handling"""
-        try:
-            if not plt.get_fignums():
-                self.running = False
-                return
-            
-            # Clear the figure before redrawing
-            plt.clf()
-            
-            # Choose view based on current mode
-            if self.view_mode == "accuracy_loss":
-                self.accuracy_loss_view()
-            elif self.view_mode == "gradients":
-                self.gradients_view()
-            elif self.view_mode == "weights_bias":
-                self.weights_bias_view()
-            elif self.view_mode == "kernels_bias":
-                self.kernels_bias_view()
-            elif self.view_mode == "feature_maps":
-                self.feature_maps_view()
-            elif self.view_mode == "pooled_feature_maps":
-                self.pooled_feature_maps_view()
-        except Exception as e:
-            print(f"Error in refresh: {e}")
+    def refresh(self):       
+        if not plt.get_fignums():
+            self.running = False
+            return
+        
+        # Choose view based on current mode
+        if self.view_mode == "accuracy_loss":
+            self.accuracy_loss_view()
+        elif self.view_mode == "gradients":
+            self.gradients_view()
+        elif self.view_mode == "weights_bias":
+            self.weights_bias_view()
+        elif self.view_mode == "kernels_bias":
+            self.kernels_bias_view()
+        elif self.view_mode == "feature_maps":
+            self.feature_maps_view()
+        elif self.view_mode == "pooled_feature_maps":
+            self.pooled_feature_maps_view()
+
+        self.fig.canvas.draw_idle()
+
+        
+        
         
 
 
